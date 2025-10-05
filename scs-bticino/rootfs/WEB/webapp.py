@@ -27,7 +27,7 @@ s = ''
 for i, _ in enumerate(dir_path_weblist):
     if((len(dir_path_weblist)-1) != i):
         s = s + _ + '/'
-dir_path_app = s + 'APP/'
+dir_path_app = s + 'app/'
 
 
 
