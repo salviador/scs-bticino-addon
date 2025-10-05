@@ -1,23 +1,17 @@
-ARG BUILD_FROM
+ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-base-python:latest
 FROM $BUILD_FROM
 
-ENV LANG C.UTF-8
+ENV LANG=C.UTF-8
 
-# Installa dipendenze di sistema e debug tools
+# Installa solo tool extra necessari
 RUN apk add --no-cache \
-    python3 \
-    py3-pip \
-    py3-tornado \
     mosquitto-clients \
-    bash \
-    curl \
-    nano \
-    htop
+    bash
 
 # Copia i file dell'applicazione
 COPY rootfs /
 
-# Installa dipendenze Python incluso debugpy
+# Installa dipendenze Python (immagine base-python gestisce pip correttamente)
 WORKDIR /app
 RUN pip3 install --no-cache-dir \
     janus \
