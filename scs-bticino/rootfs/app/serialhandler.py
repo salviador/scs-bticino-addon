@@ -32,25 +32,27 @@ class SerialHandler(object):
         while True:
             line = self.adict['ser'].read(1)
             line += self.adict['ser'].read(self.adict['ser'].in_waiting)
-            print("<",line)
+            print("<", line)
             self.adict['loop'].create_task(self.adict['rque'].put(line))
 
     async def write(self, data):
         line = bytes(bytearray(data))
-        print(">",line)
+        print(">", line)
         self.adict['ser'].write(line)
 
-async def main():
-	nameSerial = os.getenv("SERIAL_PORT", "/dev/ttyAMA10")
-	print(f"Serial port in use: {nameSerial}")
-	print("Name hardware = RPI 5")
 
-    s = SerialHandler(nameSerial,9600)
+async def main():
+    nameSerial = os.getenv("SERIAL_PORT", "/dev/ttyAMA10")
+    print(f"Serial port in use: {nameSerial}")
+    print("Name hardware = RPI 5")
+
+    s = SerialHandler(nameSerial, 9600)
     time.sleep(1)
-    print(await s.read())
+
     while True:
         line = await s.read()
         print(line)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
