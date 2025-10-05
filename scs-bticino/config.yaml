@@ -2,6 +2,7 @@ name: "SCS BTicino Bridge"
 version: "1.0.1"
 slug: "scs_bticino"
 description: "Integrazione per bus SCS BTicino tramite MQTT"
+image: "ghcr.io/home-assistant/{arch}-addon-scs_bticino"
 arch:
   - armhf
   - armv7
@@ -17,7 +18,7 @@ devices:
   - /dev/serial0
 ports:
   80/tcp: 8099
-  5678/tcp: 5678  # Porta per debug remoto
+  5678/tcp: 5678
 options:
   mqtt_host: "core-mosquitto"
   mqtt_port: 1883
