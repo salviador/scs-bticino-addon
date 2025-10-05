@@ -12,7 +12,7 @@ from serialhandler import SerialHandler
 
 import databaseAttuatori
 
-import nodered
+import nodered #i
 import logging
 import sys
 import os

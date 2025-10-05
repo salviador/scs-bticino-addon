@@ -28,7 +28,7 @@ pip3 install uvloop
 
 class SCSMQTT2(object):
     def __init__(self, stop):
-		self.STOP = stop
+		self.STOP = stop #stop
 		# Leggi configurazione da variabili d'ambiente
 		self.mqtt_host = os.getenv('MQTT_HOST', 'localhost')
 		self.mqtt_port = int(os.getenv('MQTT_PORT', 1883))
