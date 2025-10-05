@@ -21,7 +21,7 @@ RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 
-WORKDIR /app
+WORKDIR /app/app
 
 # Dipendenze Python (includi gpiozero; NON installare RPi.GPIO via apk)
 RUN pip install --no-cache-dir \
@@ -36,7 +36,8 @@ RUN pip install --no-cache-dir \
     debugpy \
     gpiozero
 
-COPY . /app
+COPY rootfs /app
+COPY rootfs /WEB
 RUN chmod +x /app/run.sh
 
 CMD ["/app/run.sh"]

@@ -52,7 +52,7 @@ export LOG_LEVEL="$LOG_LEVEL"
 
 bashio::log.info "Starting Python application..."
 
-cd /app
+cd /app/app
 
 # Se debug mode, avvia con logging dettagliato
 if [ "$DEBUG_MODE" = "true" ]; then
