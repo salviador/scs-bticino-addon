@@ -41,11 +41,9 @@ class SerialHandler(object):
         self.adict['ser'].write(line)
 
 async def main():
-    nameSerial = '/dev/serial0'
-    name = os.popen("cat /sys/firmware/devicetree/base/model").read()
-    if(name.lower().find("pi 5") > 0):
-        nameSerial = '/dev/ttyAMA0'
-        print("Name hardware = RPI 5")
+	nameSerial = os.getenv("SERIAL_PORT", "/dev/ttyAMA10")
+	print(f"Serial port in use: {nameSerial}")
+	print("Name hardware = RPI 5")
 
     s = SerialHandler(nameSerial,9600)
     time.sleep(1)
