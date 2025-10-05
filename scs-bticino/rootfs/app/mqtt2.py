@@ -2,6 +2,7 @@ import asyncio
 import os
 import signal
 import time
+import json
 from gmqtt import Client as MQTTClient
 
 import os
@@ -28,12 +29,12 @@ pip3 install uvloop
 
 class SCSMQTT2(object):
     def __init__(self, stop):
-		self.STOP = stop #stop
-		# Leggi configurazione da variabili d'ambiente
-		self.mqtt_host = os.getenv('MQTT_HOST', 'localhost')
-		self.mqtt_port = int(os.getenv('MQTT_PORT', 1883))
-		self.mqtt_user = os.getenv('MQTT_USER', '')
-		self.mqtt_password = os.getenv('MQTT_PASSWORD', '')
+        self.STOP = stop #stop
+        # Leggi configurazione da variabili d'ambiente
+        self.mqtt_host = os.getenv('MQTT_HOST', 'localhost')
+        self.mqtt_port = int(os.getenv('MQTT_PORT', 1883))
+        self.mqtt_user = os.getenv('MQTT_USER', '')
+        self.mqtt_password = os.getenv('MQTT_PASSWORD', '')
 
 
 
@@ -94,63 +95,63 @@ class SCSMQTT2(object):
             print(e)
 
 
-	async def publish_discovery(self, device_name, device_type, device_config):
-		"""Pubblica configurazione device per Home Assistant MQTT Discovery"""
-		if device_type == "switch":
-			discovery_topic = f"homeassistant/switch/scs_{device_name}/config"
-			config = {
-				"name": device_name,
-				"command_topic": f"/scsshield/device/{device_name}/switch",
-				"state_topic": f"/scsshield/device/{device_name}/status",
-				"unique_id": f"scs_{device_name}",
-				"device": {
-					"identifiers": [f"scs_bticino_{device_name}"],
-					"name": device_name,
-					"model": "SCS BTicino",
-					"manufacturer": "BTicino"
-				}
-			}
-		elif device_type == "cover":
-			discovery_topic = f"homeassistant/cover/scs_{device_name}/config"
-			config = {
-				"name": device_name,
-				"command_topic": f"/scsshield/device/{device_name}/percentuale",
-				"position_topic": f"/scsshield/device/{device_name}/status",
-				"set_position_topic": f"/scsshield/device/{device_name}/percentuale",
-				"unique_id": f"scs_{device_name}",
-				"device": {
-					"identifiers": [f"scs_bticino_{device_name}"],
-					"name": device_name,
-					"model": "SCS BTicino Shutter",
-					"manufacturer": "BTicino"
-				}
-			}
+    async def publish_discovery(self, device_name, device_type, device_config):
+        """Pubblica configurazione device per Home Assistant MQTT Discovery"""
+        if device_type == "switch":
+            discovery_topic = f"homeassistant/switch/scs_{device_name}/config"
+            config = {
+                "name": device_name,
+                "command_topic": f"/scsshield/device/{device_name}/switch",
+                "state_topic": f"/scsshield/device/{device_name}/status",
+                "unique_id": f"scs_{device_name}",
+                "device": {
+                    "identifiers": [f"scs_bticino_{device_name}"],
+                    "name": device_name,
+                    "model": "SCS BTicino",
+                    "manufacturer": "BTicino"
+                }
+            }
+        elif device_type == "cover":
+            discovery_topic = f"homeassistant/cover/scs_{device_name}/config"
+            config = {
+                "name": device_name,
+                "command_topic": f"/scsshield/device/{device_name}/percentuale",
+                "position_topic": f"/scsshield/device/{device_name}/status",
+                "set_position_topic": f"/scsshield/device/{device_name}/percentuale",
+                "unique_id": f"scs_{device_name}",
+                "device": {
+                    "identifiers": [f"scs_bticino_{device_name}"],
+                    "name": device_name,
+                    "model": "SCS BTicino Shutter",
+                    "manufacturer": "BTicino"
+                }
+            }
 
-		await self.client.publish(discovery_topic, json.dumps(config), qos=1, retain=True)
-
-
+        await self.client.publish(discovery_topic, json.dumps(config), qos=1, retain=True)
 
 
 
-	
-	
-	
+
+
+    
+    
+    
     async def main(self, queue):
-		self.queue = queue
-		try:
-			self.client = MQTTClient("scs-bticino-bridge")
-			self.client.on_connect = self.on_connect
-			self.client.on_message = self.on_message
-			self.client.on_disconnect = self.on_disconnect
-			self.client.on_subscribe = self.on_subscribe
+        self.queue = queue
+        try:
+            self.client = MQTTClient("scs-bticino-bridge")
+            self.client.on_connect = self.on_connect
+            self.client.on_message = self.on_message
+            self.client.on_disconnect = self.on_disconnect
+            self.client.on_subscribe = self.on_subscribe
 
-			# Usa autenticazione se configurata
-			if self.mqtt_user and self.mqtt_password:
-				self.client.set_auth_credentials(self.mqtt_user, self.mqtt_password)
+            # Usa autenticazione se configurata
+            if self.mqtt_user and self.mqtt_password:
+                self.client.set_auth_credentials(self.mqtt_user, self.mqtt_password)
 
-			await self.client.connect(self.mqtt_host, port=self.mqtt_port, keepalive=65535)
-			await self.STOP.wait()
-			await self.client.disconnect()
+            await self.client.connect(self.mqtt_host, port=self.mqtt_port, keepalive=65535)
+            await self.STOP.wait()
+            await self.client.disconnect()
 
-		except Exception as e:
-			print("MQTT ERROR", e)
+        except Exception as e:
+            print("MQTT ERROR", e)
