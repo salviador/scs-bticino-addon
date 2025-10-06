@@ -53,6 +53,46 @@ q = None
 q_nodered = None
 
 
+
+
+
+
+
+
+
+
+
+# webapp.py (in alto, dove hai già letto le env)
+import os, json, tornado.web
+
+MQTT_HOST = os.getenv("MQTT_HOST", "core-mosquitto")
+MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
+MQTT_WS_PORT = int(os.getenv("MQTT_WS_PORT", "1884"))  # <— aggiungi questa env per WS
+MQTT_USER = os.getenv("MQTT_USER", "")
+MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "")
+MQTT_WS_PATH = os.getenv("MQTT_WS_PATH", "")  # di solito vuoto con Mosquitto addon
+
+class MQTTConfigHandler(tornado.web.RequestHandler):
+    def get(self):
+        # NB: per il browser useremo window.location.hostname, non l’host del container
+        cfg = {
+            "use_tls": False,               # metti True se usi wss
+            "ws_port": MQTT_WS_PORT,        # es. 1884 (websockets)
+            "path": MQTT_WS_PATH,           # es. "/mqtt" se lo hai configurato
+            "username": MQTT_USER or None,
+            "password": MQTT_PASSWORD or None
+        }
+        self.set_header("Content-Type", "application/json")
+        self.write(json.dumps(cfg))
+
+
+
+
+
+
+
+
+
 # --- MQTT Discovery helpers ---------------------------------------------------
 import re
 import json as _json
@@ -719,7 +759,7 @@ def make_app():
         (r"/Get_NodeRedAWS_manual_flow.json", Get_NodeRedAWS_manual_flow),
 
 
- 
+
 
 
         #AWS certificati Upload
@@ -732,9 +772,9 @@ def make_app():
         #websocket
         (r'/ws', SocketHandler),
 
-	    #(r'/site/js/(.*)', tornado.web.StaticFileHandler, {'path': '/home/pi/SCS/WEB/site/js/'}),
-	    #(r'/site/css/(.*)', tornado.web.StaticFileHandler, {'path': '/home/pi/SCS/WEB/site/css/'}),
-	    (r'/site/image/(.*)', tornado.web.StaticFileHandler, {'path': dir_path + '/site/build'}),
+        #(r'/site/js/(.*)', tornado.web.StaticFileHandler, {'path': '/home/pi/SCS/WEB/site/js/'}),
+        #(r'/site/css/(.*)', tornado.web.StaticFileHandler, {'path': '/home/pi/SCS/WEB/site/css/'}),
+        (r'/site/image/(.*)', tornado.web.StaticFileHandler, {'path': dir_path + '/site/build'}),
 
 
 
@@ -745,10 +785,11 @@ def make_app():
         #React x pagina test
         (r"/test3.html", reactMain),
         (r"/build(.*)", tornado.web.StaticFileHandler, {'path': dir_path + '/site/build/'}),
-	    (r'/static/css/(.*)', tornado.web.StaticFileHandler, {'path': dir_path + '/site/build/static/css/'}),
-	    (r'/static/js/(.*)', tornado.web.StaticFileHandler, {'path': dir_path + '/site/build/static/js/'})
+        (r'/static/css/(.*)', tornado.web.StaticFileHandler, {'path': dir_path + '/site/build/static/css/'}),
+        (r'/static/js/(.*)', tornado.web.StaticFileHandler, {'path': dir_path + '/site/build/static/js/'}),
 
 
+        (r"/mqtt_config.json", MQTTConfigHandler)
 
 
 

@@ -726,7 +726,7 @@ async def main():
 
     #tasks.append(loop.create_task( Node_Red_flow(queue_node_red_action.async_q)           ))
 
-    tasks.append(loop.create_task( TEST_PUB()           ))
+    #tasks.append(loop.create_task( TEST_PUB()           ))
 
 
     await asyncio.gather(*tasks)  # ← AGGIUNGI 'await' qui!

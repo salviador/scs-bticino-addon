@@ -1,151 +1,101 @@
 import { useState, useEffect } from 'react';
 import Dispositivi from './Dispositivi';
-
 import mqtt from "mqtt";
 import "./../App.css";
 
-
-//https://levelup.gitconnected.com/mqtt-over-websocket-in-a-react-app-35ce96cd0844
-
-
-
-//const websocketUrl = "ws://192.168.1.16:9001";
-var loc = window.location, new_uri;
-const websocketUrl = "ws://" + loc.host + ":9001";
-
-//const ADDRESS_SERVER = "http://192.168.1.16/";
 const ADDRESS_SERVER = "/";
 
-
-
-
 function Test() {
-    const [lista_dispositivi, setListaDispositivi] = useState([]);
-    const [MqttClient, setMqttClient] = useState([]);
+  const [lista_dispositivi, setListaDispositivi] = useState([]);
+  const [mqttClient, setMqttClient] = useState(null);
+  const [MQTT_data, setMQTT_data] = useState("");
+  const [DebugSCSbus, setDebugSCSbus] = useState("");
 
-    const [MQTT_data, setMQTT_data] = useState("");
+  useEffect(() => {
+    let _client = null;
 
-    const [DebugSCSbus, setDebugSCSbus] = useState("");
+    const loadDevices = async () => {
+      const data = await fetch(ADDRESS_SERVER + "GetConfigurazionereact.json").then(r => r.json());
+      setListaDispositivi(data);
+    };
 
-    useEffect(() => {
-        var client = null;
+    const connectMqtt = async () => {
+      // 1) prendi config dal backend
+      const cfg = await fetch("/mqtt_config.json").then(r => r.json());
+      const host = window.location.hostname;                 // es. homeassistant.local
+      const proto = cfg.use_tls ? "wss" : "ws";
+      const url = `${proto}://${host}:${cfg.ws_port}${cfg.path || ""}`;
 
-        setListaDispositivi([]);
-        console.log("**** FETCH DATA ****");
+      const options = { reconnectPeriod: 2000, clean: true };
+      if (cfg.username) options.username = cfg.username;
+      if (cfg.password) options.password = cfg.password;
 
-        const fetchData = async () => {
-            await fetch(ADDRESS_SERVER + 'GetConfigurazionereact.json')
-                .then(res => res.json())
-                .then((data) => {
-                    setListaDispositivi(data);
-                });
-        };
+      // 2) connetti
+      _client = mqtt.connect(url, options);
+      setMqttClient(_client);
 
+      _client.on("connect", () => {
+        console.log("MQTT connesso:", url);
+        _client.subscribe("/scsshield/device/+/status");
+        _client.subscribe("/scsshield/device/+/status/percentuale");
+        _client.subscribe("/scsshield/device/+/modalita_termostato_impostata");
+        _client.subscribe("/scsshield/device/+/temperatura_termostato_impostata");
+        // _client.subscribe("/scsshield/debug/bus");
+      });
 
-        const mqttconnect = () => {
-            if (client == null) {
+      _client.on("error", (err) => {
+        console.error("MQTT ERROR:", err?.message || err);
+        try { _client.end(); } catch {}
+      });
 
-            } else {
-                console.log("CLOSEEEE era aperto");
-                client.unsubscribe("/scsshield/device/+/status");
-                client.unsubscribe("/scsshield/device/+/status/percentuale");
-                client.unsubscribe("/scsshield/device/+/modalita_termostato_impostata");
-                client.unsubscribe("/scsshield/device/+/temperatura_termostato_impostata");
-               // client.unsubscribe("/scsshield/debug/bus");
-                client.end();
-                client.close();
-            }
-            client = mqtt.connect(websocketUrl);
-            setMqttClient(client);
-
-            client.on('connect', function () {
-                console.log("MQTT Connesso....ok!");
-                client.subscribe("/scsshield/device/+/status");
-                client.subscribe("/scsshield/device/+/status/percentuale");
-                client.subscribe("/scsshield/device/+/modalita_termostato_impostata");
-                client.subscribe("/scsshield/device/+/temperatura_termostato_impostata");
-             //   client.subscribe("/scsshield/debug/bus");
-
-            });
-            client.on('error', function () {
-                console.log("MQTT ERROR!");
-                client.end();
-            });
-            client.on('message', function (topic, payload, packet) {
-                const data = new TextDecoder("utf-8").decode(payload);
-
-                if (topic.localeCompare("/scsshield/debug/bus") == 0) {
-                    setDebugSCSbus(DebugSCSbus => [...DebugSCSbus, data + '\n']);
-                } else {
-
-                    var m = (topic).split("/");
-                    var nomeDevice = m[3];
-
-                    var mesg = (data).toLowerCase();
-
-                    const dd = { "nome_attuatore": nomeDevice, "stato": mesg, "topic": topic };
-
-                    setMQTT_data(dd);
-
-                    console.log(dd.nome_attuatore);
-                    console.log(dd.stato);
-                }
-
-            });
-        };
-
-        fetchData();
-        mqttconnect();
-
-        return () => {
-            console.log("CLOSEEE");
-            setListaDispositivi([]);
-
-            client.unsubscribe("/scsshield/device/+/status");
-            client.unsubscribe("/scsshield/device/+/status/percentuale");
-            client.unsubscribe("/scsshield/device/+/modalita_termostato_impostata");
-            client.unsubscribe("/scsshield/device/+/temperatura_termostato_impostata");
-            client.end();
-            //MqttClient.close();
-            // cleaning up the listeners here
+      _client.on("message", (topic, payload) => {
+        const data = new TextDecoder("utf-8").decode(payload);
+        if (topic === "/scsshield/debug/bus") {
+          setDebugSCSbus(prev => [...prev, data + "\n"]);
+          return;
         }
-    }, []);
+        const parts = topic.split("/");
+        const nomeDevice = parts[3] || "";
+        const mesg = data.toLowerCase();
+        setMQTT_data({ nome_attuatore: nomeDevice, stato: mesg, topic });
+      });
+    };
 
+    (async () => {
+      await loadDevices();
+      await connectMqtt();
+    })();
 
+    return () => {
+      try {
+        if (_client) {
+          _client.unsubscribe("/scsshield/device/+/status");
+          _client.unsubscribe("/scsshield/device/+/status/percentuale");
+          _client.unsubscribe("/scsshield/device/+/modalita_termostato_impostata");
+          _client.unsubscribe("/scsshield/device/+/temperatura_termostato_impostata");
+          _client.end(true);
+        }
+      } catch {}
+    };
+  }, []);
 
-
-
-
-
-    return (
-        <>
-            <div className="container-fluid">
-                {lista_dispositivi.map((device, i) => (
-                    <div key={i} style={{marginBottom:"50px"}} >
-                        <Dispositivi device={device} mqttdata={MQTT_data} clientMWTT={MqttClient} />
-                    </div>
-                ))}
-            </div>
-            {
-            /*<div className="DebugSCSbus" style={{ textAlign: "center" }}>
-                <textarea style={{ width: "80%" }} value={DebugSCSbus} rows={12} cols={50} name="Debug Bus" placeholder='' />
-            </div>
-            */
-            }
-        </>
-    );
-
-
-
-
-
-
-
-
-
-
+  return (
+    <>
+      <div className="container-fluid">
+        {lista_dispositivi.map((device, i) => (
+          <div key={i} style={{ marginBottom: "50px" }}>
+            {/* nome prop corretto: clientMQTT */}
+            <Dispositivi device={device} mqttdata={MQTT_data} clientMQTT={mqttClient} />
+          </div>
+        ))}
+      </div>
+      {/* Debug opzionale
+      <div className="DebugSCSbus" style={{ textAlign: "center" }}>
+        <textarea style={{ width: "80%" }} value={DebugSCSbus} rows={12} cols={50} />
+      </div>
+      */}
+    </>
+  );
 }
-
-
 
 export default Test;
