@@ -16,54 +16,54 @@ import "./../App.css";
 
 
 
-function Dispositivi({ device, mqttdata, clientMWTT }) {
+function Dispositivi({ device, mqttdata, clientMQTT  }) {
 
     if (device.tipo_attuatore === "on_off") {
         return (
             <>
-                <ON_OFF device={device} valuedataRT={mqttdata} clientMWTT={clientMWTT} />
+                <ON_OFF device={device} valuedataRT={mqttdata} clientMWTT={clientMQTT } />
             </>
         );
     } else if (device.tipo_attuatore === "sensori_temperatura") {
         return (
             <>
-                <Sensori_Temperatura device={device} valuedataRT={mqttdata} clientMWTT={clientMWTT} />
+                <Sensori_Temperatura device={device} valuedataRT={mqttdata} clientMWTT={clientMQTT } />
             </>
         );
     } else if (device.tipo_attuatore === "termostati") {
         return (
             <>
-                <Termostati device={device} valuedataRT={mqttdata} clientMWTT={clientMWTT}/>
+                <Termostati device={device} valuedataRT={mqttdata} clientMWTT={clientMQTT }/>
             </>
         );
     }else if (device.tipo_attuatore === "serrande_tapparelle") {
         return (
             <>
-                <Serrande_Tapparelle device={device} valuedataRT={mqttdata} clientMWTT={clientMWTT}/>
+                <Serrande_Tapparelle device={device} valuedataRT={mqttdata} clientMWTT={clientMQTT }/>
             </>
         );
     }else if (device.tipo_attuatore === "dimmer") {
         return (
             <>
-                <Dimmer device={device} valuedataRT={mqttdata} clientMWTT={clientMWTT}/>
+                <Dimmer device={device} valuedataRT={mqttdata} clientMWTT={clientMQTT }/>
             </>
         );
     }else if (device.tipo_attuatore === "gruppi") {
         return (
             <>
-                <Gruppi device={device} valuedataRT={mqttdata} clientMWTT={clientMWTT}/>
+                <Gruppi device={device} valuedataRT={mqttdata} clientMWTT={clientMQTT }/>
             </>
         );
     }else if (device.tipo_attuatore === "serrature") {
         return (
             <>
-                <Serrature device={device} valuedataRT={mqttdata} clientMWTT={clientMWTT}/>
+                <Serrature device={device} valuedataRT={mqttdata} clientMWTT={clientMQTT }/>
             </>
         );
     }else if (device.tipo_attuatore === "campanello_porta") {
         return (
             <>
-                <Campanello_porta device={device} valuedataRT={mqttdata} clientMWTT={clientMWTT}/>
+                <Campanello_porta device={device} valuedataRT={mqttdata} clientMWTT={clientMQTT }/>
             </>
         );
     }
