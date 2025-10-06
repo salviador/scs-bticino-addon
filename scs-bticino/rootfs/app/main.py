@@ -79,11 +79,19 @@ def gpio12_init():
     """Inizializza GPIO12 usando libgpiod per RPi 5"""
     global gpio_chip, gpio_line, gpio_available
     
-    # Prova diversi gpiochip (RPi 5 usa tipicamente gpiochip4)
-    for chip_name in ['gpiochip4', 'gpiochip0', 'gpiochip1', 'gpiochip2']:
+    # Prova tutti i chip disponibili su RPi 5
+    for chip_name in ['gpiochip4', 'gpiochip0', 'gpiochip10', 'gpiochip11', 
+                      'gpiochip12', 'gpiochip13', 'gpiochip1', 'gpiochip2']:
         try:
             logger.info(f"Trying {chip_name}...")
             gpio_chip = gpiod.Chip(chip_name)
+            
+            # Verifica che il chip abbia almeno GPIO12
+            if gpio_chip.num_lines() < 13:
+                logger.debug(f"{chip_name} has only {gpio_chip.num_lines()} lines")
+                gpio_chip.close()
+                continue
+            
             gpio_line = gpio_chip.get_line(GPIO_PIN)
             gpio_line.request(
                 consumer='scs_bticino',
