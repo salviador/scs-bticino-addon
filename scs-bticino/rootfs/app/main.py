@@ -583,7 +583,7 @@ async def start_tornado(jqueqe, jqueqeNodeRed):
     webapp.rec_queque(jqueqe)
     webapp.rec_queque_NODERED(jqueqeNodeRed)
     
-    webapp.tornado.platform.asyncio.AsyncIOMainLoop().install()
+    #webapp.tornado.platform.asyncio.AsyncIOMainLoop().install()
 
 
 async def TEST_PUB():
