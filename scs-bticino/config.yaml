@@ -1,5 +1,5 @@
 name: "SCS BTicino Bridge"
-version: "1.0.8"        # ↑ alza la versione
+version: "1.0.9"        # ↑ alza la versione
 slug: "scs_bticino"
 description: "Integrazione per bus SCS BTicino tramite MQTT"
 arch:
@@ -18,8 +18,9 @@ devices:
   - "/dev/serial0:/dev/serial0:rwm"
   - "/dev/ttyAMA0:/dev/ttyAMA0:rwm"
   - "/dev/ttyAMA10:/dev/ttyAMA10:rwm"
-  - "/dev/gpiomem:/dev/gpiomem:rwm"   # <— aggiungi
-  - "/dev/mem:/dev/mem:rwm"           # <— opzionale ma utile  
+  - "/dev/gpiochip0:/dev/gpiochip0:rwm"
+  - "/dev/gpiochip1:/dev/gpiochip1:rwm"  # se presente
+  - "/dev/gpiomem:/dev/gpiomem:rwm"      # opzionale
 options:
   mqtt_host: "core-mosquitto"
   mqtt_port: 1883

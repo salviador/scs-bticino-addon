@@ -5,13 +5,13 @@ FROM $BUILD_FROM
 # Pacchetti utili (bashio e s6 sono già inclusi nell'addon-base)
 RUN apk add --no-cache \
     python3 py3-pip jq bash curl nano htop mosquitto-clients \
-    build-base python3-dev libffi-dev openssl-dev
+    build-base python3-dev libffi-dev openssl-dev libgpiod libgpiod-dev
 
 # Venv per rispettare PEP 668
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
-ENV GPIOZERO_PIN_FACTORY=rpigpio
+ENV GPIOZERO_PIN_FACTORY=lgpio
 
 # --- COPIE CORRETTE ---
 # Porta la tua app (dove c'è main.py) in /app/app
@@ -25,7 +25,7 @@ RUN chmod +x /app/run.sh
 # Dipendenze Python (aggiungi qui se usi un requirements.txt)
 RUN pip install --no-cache-dir \
     janus asyncserial asyncio-mqtt tinydb gmqtt uvloop tornado \
-    paho-mqtt debugpy gpiozero RPi.GPIO
+    paho-mqtt debugpy gpiozero lgpio
 
 # Lavoriamo nella cartella che contiene main.py
 WORKDIR /app/app
