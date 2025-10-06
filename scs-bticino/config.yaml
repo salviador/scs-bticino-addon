@@ -1,5 +1,5 @@
 name: "SCS BTicino Bridge"
-version: "1.0.9.04"
+version: "1.0.9.05"
 slug: "scs_bticino"
 description: "Integrazione per bus SCS BTicino tramite MQTT"
 arch:
@@ -20,11 +20,14 @@ devices:
   - "/dev/serial0:/dev/serial0:rwm"
   - "/dev/ttyAMA0:/dev/ttyAMA0:rwm"
   - "/dev/ttyAMA10:/dev/ttyAMA10:rwm"
-  - "/dev/gpiochip0:/dev/gpiochip0:rwm"
-  - "/dev/gpiochip1:/dev/gpiochip1:rwm"
-  - "/dev/gpiomem:/dev/gpiomem:rwm"
-  - "/sys/class/gpio:/sys/class/gpio:rwm"  # ← AGGIUNGI QUESTO
+  - /dev/gpiochip0:/dev/gpiochip0:rwm
+  - /dev/gpiochip1:/dev/gpiochip1:rwm
+  - /dev/gpiochip2:/dev/gpiochip2:rwm
+  - /dev/gpiochip3:/dev/gpiochip3:rwm
+  - /dev/gpiochip4:/dev/gpiochip4:rwm   # su Raspberry Pi 5 spesso è questo quello “giusto”
+  - /dev/gpiomem:/dev/gpiomem:rwm
   
+ 
 options:
   mqtt_host: "core-mosquitto"
   mqtt_port: 1883

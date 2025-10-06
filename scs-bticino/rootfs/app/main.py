@@ -69,15 +69,31 @@ gpio_chip = None
 gpio_line = None
 
 def gpio12_setup():
-    """Setup GPIO12 usando libgpiod"""
+    """Autodiscovery del chip che espone la linea BCM 12 e richiesta come output."""
     global gpio_chip, gpio_line
     try:
         import gpiod
-        gpio_chip = gpiod.Chip('gpiochip0')
-        gpio_line = gpio_chip.get_line(GPIO_PIN)
-        gpio_line.request(consumer='scs_bticino', type=gpiod.LINE_REQ_DIR_OUT, default_vals=[0])
-        logger.info(f"✓ GPIO{GPIO_PIN} initialized successfully")
-        return True
+
+        # Prova i chip più comuni su RPi5: 0..5, scegli il primo che accetta la linea 12
+        last_err = None
+        for chip_name in [f'gpiochip{i}' for i in range(0, 6)]:
+            try:
+                ch = gpiod.Chip(chip_name)
+                ln = ch.get_line(12)  # BCM12 -> offset 12
+                ln.request(consumer='scs_bticino', type=gpiod.LINE_REQ_DIR_OUT, default_vals=[0])
+                # Se siamo qui, l'abbiamo preso
+                gpio_chip, gpio_line = ch, ln
+                logger.info(f"✓ GPIO12 initialized on {chip_name}")
+                return True
+            except Exception as e:
+                last_err = e
+                try:
+                    ch.close()
+                except Exception:
+                    pass
+
+        raise last_err if last_err else FileNotFoundError("No gpiochip accepted line 12")
+
     except Exception as e:
         logger.warning(f"⚠ GPIO setup failed (non-critical): {e}")
         logger.warning("  The add-on will continue without GPIO control")
@@ -612,14 +628,13 @@ async def main():
 
     tasks.append(loop.create_task( mqtt_action(queue_mqtt_action.async_q)           ))
 
-    tasks.append(loop.create_task( Node_Red_flow(queue_node_red_action.async_q)           ))
+    #tasks.append(loop.create_task( Node_Red_flow(queue_node_red_action.async_q)           ))
 
     tasks.append(loop.create_task( TEST_PUB()           ))
 
 
+    await asyncio.gather(*tasks)  # ← AGGIUNGI 'await' qui!
 
-
-    asyncio.gather(*tasks)
 
 class HealthHandler(tornado.web.RequestHandler):
     def get(self):
@@ -671,16 +686,16 @@ class HealthHandler(tornado.web.RequestHandler):
 
 popula_device()
 
-process = subprocess.Popen(['node-red-start'],
-					stdout=subprocess.PIPE, 
-					stderr=subprocess.PIPE)
+#process = subprocess.Popen(['node-red-start'],
+#					stdout=subprocess.PIPE, 
+#					stderr=subprocess.PIPE)
 
 #logger(process)
 
 
-process = subprocess.Popen(['systemctl', 'status nodered.service'],
-					stdout=subprocess.PIPE, 
-					stderr=subprocess.PIPE)                        
+#process = subprocess.Popen(['systemctl', 'status nodered.service'],
+#					stdout=subprocess.PIPE, 
+#					stderr=subprocess.PIPE)                        
 
 #logger(process)
     
