@@ -63,7 +63,6 @@ import sys
 
 logger = logging.getLogger(__name__)
 
-# GPIO usando libgpiod (più affidabile in container)
 # =============================================================================
 # GPIO CONFIGURATION (Raspberry Pi 5)
 # =============================================================================
@@ -79,93 +78,156 @@ def gpio12_init():
     """Inizializza GPIO12 usando libgpiod per RPi 5"""
     global gpio_chip, gpio_line, gpio_available
     
-    # Prova tutti i chip disponibili su RPi 5
+    # Prova tutti i chip disponibili
     for chip_name in ['gpiochip4', 'gpiochip0', 'gpiochip10', 'gpiochip11', 
                       'gpiochip12', 'gpiochip13', 'gpiochip1', 'gpiochip2']:
         try:
             logger.info(f"Trying {chip_name}...")
             gpio_chip = gpiod.Chip(chip_name)
             
-            # Verifica che il chip abbia almeno GPIO12
-            if gpio_chip.num_lines() < 13:
-                logger.debug(f"{chip_name} has only {gpio_chip.num_lines()} lines")
+            # Info dettagliate
+            num_lines = gpio_chip.num_lines()
+            logger.info(f"  {chip_name}: {num_lines} lines, name={gpio_chip.name()}, label={gpio_chip.label()}")
+            
+            # Verifica linee disponibili
+            if num_lines <= GPIO_PIN:
+                logger.debug(f"  {chip_name} only has {num_lines} lines (need {GPIO_PIN})")
                 gpio_chip.close()
                 continue
             
-            gpio_line = gpio_chip.get_line(GPIO_PIN)
+            # Prova ad acquisire GPIO12
+            test_line = gpio_chip.get_line(GPIO_PIN)
+            
+            if test_line.is_used():
+                logger.warning(f"  Line {GPIO_PIN} already used by '{test_line.consumer()}'")
+                gpio_chip.close()
+                continue
+            
+            gpio_line = test_line
             gpio_line.request(
                 consumer='scs_bticino',
                 type=gpiod.LINE_REQ_DIR_OUT,
-                default_vals=[1]  # Attiva subito a HIGH
+                default_vals=[1]
             )
-            logger.info(f"✓ GPIO12 activated using {chip_name}")
+            logger.info(f"✓ GPIO12 activated on {chip_name}")
             gpio_available = True
             return True
+            
+        except PermissionError as e:
+            logger.warning(f"  {chip_name}: Permission denied")
+        except OSError as e:
+            logger.warning(f"  {chip_name}: {e}")
         except Exception as e:
-            logger.debug(f"{chip_name} failed: {e}")
-            if gpio_chip:
+            logger.debug(f"  {chip_name}: {type(e).__name__}: {e}")
+        finally:
+            if gpio_chip and not gpio_available:
                 try:
                     gpio_chip.close()
                 except:
                     pass
                 gpio_chip = None
     
-    logger.warning("⚠ GPIO not available on any chip")
-    return False
+    # Fallback: prova metodo host
+    logger.warning("libgpiod failed, trying sysfs method...")
+    return gpio12_init_sysfs()
+
+def gpio12_init_sysfs():
+    """Fallback usando /sys/class/gpio"""
+    global gpio_available
+    try:
+        # Export GPIO12
+        with open('/sys/class/gpio/export', 'w') as f:
+            f.write(str(GPIO_PIN))
+        time.sleep(0.1)
+        
+        # Set direction OUT
+        with open(f'/sys/class/gpio/gpio{GPIO_PIN}/direction', 'w') as f:
+            f.write('out')
+        
+        # Set HIGH
+        with open(f'/sys/class/gpio/gpio{GPIO_PIN}/value', 'w') as f:
+            f.write('1')
+        
+        logger.info(f"✓ GPIO12 activated via sysfs")
+        gpio_available = True
+        return True
+    except Exception as e:
+        logger.error(f"sysfs GPIO init failed: {e}")
+        return False
 
 def gpio12_set(value: int):
     """Imposta GPIO12"""
-    global gpio_line
+    global gpio_line, gpio_available
+    
+    if not gpio_available:
+        return False
+    
+    # Prova libgpiod
     if gpio_line:
         try:
             gpio_line.set_value(1 if value else 0)
-            logger.debug(f"GPIO12 set to {'HIGH' if value else 'LOW'}")
+            logger.debug(f"GPIO12 = {'HIGH' if value else 'LOW'}")
             return True
         except Exception as e:
-            logger.debug(f"GPIO set failed: {e}")
-    return False
+            logger.debug(f"gpiod set failed: {e}")
+    
+    # Fallback sysfs
+    try:
+        with open(f'/sys/class/gpio/gpio{GPIO_PIN}/value', 'w') as f:
+            f.write('1' if value else '0')
+        return True
+    except Exception as e:
+        logger.debug(f"sysfs set failed: {e}")
+        return False
 
 def gpio12_cleanup():
     """Cleanup GPIO"""
-    global gpio_chip, gpio_line
+    global gpio_chip, gpio_line, gpio_available
     try:
         if gpio_line:
             gpio_line.set_value(0)
             gpio_line.release()
         if gpio_chip:
             gpio_chip.close()
+        
+        # Cleanup sysfs
+        try:
+            with open('/sys/class/gpio/unexport', 'w') as f:
+                f.write(str(GPIO_PIN))
+        except:
+            pass
+        
         logger.info("✓ GPIO cleanup completed")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"GPIO cleanup: {e}")
 
 # Inizializza GPIO
 logger.info("Initializing GPIO for Raspberry Pi 5...")
 gpio12_init()
 atexit.register(gpio12_cleanup)
 
-# DEBUG: Scopri quale GPIO chip è disponibile
+
+# Test GPIO se disponibile
+if gpio_available:
+    logger.info("✓ GPIO12 enabled - testing...")
+    gpio12_set(1)
+    logger.info("✓ GPIO test completed")
+else:
+    logger.warning("⚠ Running without GPIO - SCS opto may not work")
+
+
+
+
+
+# Debug info
 logger.info("=== GPIO DEBUG ===")
-gpio_devices = []
 try:
-    for dev in os.listdir('/dev'):
-        if 'gpio' in dev.lower():
-            gpio_devices.append(dev)
-    logger.info(f"GPIO devices found: {gpio_devices}")
+    gpio_devs = [d for d in os.listdir('/dev') if 'gpio' in d.lower()]
+    logger.info(f"GPIO devices: {gpio_devs}")
 except Exception as e:
     logger.error(f"Cannot list /dev: {e}")
 
 logger.info(f"/sys/class/gpio exists: {os.path.exists('/sys/class/gpio')}")
-
-try:
-    for chip_num in range(5):
-        try:
-            chip = gpiod.Chip(f'gpiochip{chip_num}')
-            logger.info(f"✓ gpiochip{chip_num}: {chip.num_lines()} lines available")
-            chip.close()
-        except Exception as e:
-            logger.debug(f"gpiochip{chip_num}: not available")
-except Exception as e:
-    logger.error(f"gpiod test failed: {e}")
 logger.info("==================")
 
 # =============================================================================
