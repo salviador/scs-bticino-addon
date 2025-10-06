@@ -30,6 +30,10 @@ function Test() {
       if (cfg.username) options.username = cfg.username;
       if (cfg.password) options.password = cfg.password;
 
+      console.log("MQTT url..............:", url);
+      console.log("options:", options);
+
+
       // 2) connetti
       _client = mqtt.connect(url, options);
       setMqttClient(_client);
