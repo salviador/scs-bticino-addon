@@ -53,7 +53,6 @@ q = None
 q_nodered = None
 
 
-
 # --- MQTT Discovery helpers ---------------------------------------------------
 import re
 import json as _json
@@ -64,104 +63,126 @@ def _slugify(value: str) -> str:
     s = re.sub(r"[^a-zA-Z0-9_]", "", s)
     return s.lower()
 
-# Mappa dal tuo tipo_attuatore (case-insensitive) al domain di HA
 DOMAIN_MAP = {
     "on_off": "switch",
     "switch": "switch",
     "luce": "light",
     "light": "light",
     "dimmer": "light",
+    "serrande_tapparelle": "cover",
     "tapparella": "cover",
     "tenda": "cover",
     "serranda": "cover",
-    "sensore": "sensor",
-    "binary_sensor": "binary_sensor",
+    "sensori_temperatura": "sensor",
     "temperatura": "sensor",
     "umidita": "sensor",
-    "clima": "climate",
-    "termostato": "climate",
+    "campanello_porta": "binary_sensor",
+    "serrature": "lock",
+    # "termostati": "climate",  # lo aggiungeremo quando prepari i topic completi
 }
+
+def _build_topics(object_id: str):
+    base = f"/scsshield/device/{object_id}"
+    return {
+        "state": f"{base}/status",
+        "switch_cmd": f"{base}/switch",
+        "dimmer_cmd": f"{base}/dimmer",
+        "dimmer_state": f"{base}/status/percentuale",
+        "cover_setpos": f"{base}/percentuale",
+        "cover_position": f"{base}/percentuale",  # se in futuro pubblichi lo stato
+        "attrs": f"{base}/attrs",
+    }
 
 def _build_discovery_payload(nome_attuatore: str, tipo_attuatore: str):
     object_id = _slugify(nome_attuatore)
     unique_id = f"scs_{object_id}"
-    domain = DOMAIN_MAP.get(tipo_attuatore.lower(), "switch")
+    t = (tipo_attuatore or "").lower()
+    domain = DOMAIN_MAP.get(t, "switch")
 
-    # Topic di stato/comando per il tuo bridge
-    # (adatta se i tuoi topic reali sono diversi)
-    state_topic = f"/scsshield/{object_id}/state"
-    cmd_topic   = f"/scsshield/{object_id}/set"
+    topics = _build_topics(object_id)
 
-    # Base comune
+    device = {
+        "identifiers": ["scs_bticino_bridge"],
+        "name": "SCS BTicino Bridge",
+        "manufacturer": "YourName",
+        "model": "SCS ↔ MQTT",
+    }
+
+    # Default payload comune
     payload = {
         "name": nome_attuatore,
         "unique_id": unique_id,
-        "state_topic": state_topic,
-        "json_attributes_topic": f"/scsshield/{object_id}/attrs",
-        "device": {
-            "identifiers": [f"scs_bticino_bridge"],
-            "name": "SCS BTicino Bridge",
-            "manufacturer": "YourName",
-            "model": "SCS ↔ MQTT",
-        }
+        "json_attributes_topic": topics["attrs"],
+        "device": device,
     }
 
-    # Per domain specifici aggiungiamo campi necessari
-    if domain in ("switch",):
+    if domain == "switch":
         payload.update({
-            "command_topic": cmd_topic,
-            "payload_on": "ON",
-            "payload_off": "OFF",
+            "state_topic": topics["state"],
+            "command_topic": topics["switch_cmd"],
+            "state_on": "on",
+            "state_off": "off",
+            "payload_on": "on",
+            "payload_off": "off",
         })
 
-    elif domain in ("light",):
-        # Se è dimmer, supporta brightness via JSON:
-        # pubblica su cmd_topic un JSON {"state":"ON","brightness":0..255}
+    elif domain == "light":
+        # per dimmer: comandi numerici 0..100 sullo stesso topic
         payload.update({
-            "schema": "json",
-            "command_topic": cmd_topic,
-            "brightness": True,  # per dimmer
-            "brightness_scale": 255
+            "state_topic": topics["state"],
+            "command_topic": topics["dimmer_cmd"],             # "on"/"off"/numero 0..100
+            "brightness_command_topic": topics["dimmer_cmd"],  # numero 0..100
+            "brightness_state_topic": topics["dimmer_state"],  # percentuale da /status/percentuale
+            "brightness_scale": 100,
+            "state_on": "on",
+            "state_off": "off",
+            "payload_on": "on",
+            "payload_off": "off",
         })
 
-    elif domain in ("cover",):
-        # Supporto open/close/stop via topic testuali
+    elif domain == "cover":
+        # al momento non pubblichi la posizione -> optimistic
         payload.update({
-            "command_topic": cmd_topic,
-            "set_position_topic": f"/scsshield/{object_id}/set_position",
-            "position_topic": f"/scsshield/{object_id}/position",
-            "payload_open": "OPEN",
-            "payload_close": "CLOSE",
-            "payload_stop": "STOP",
-            "optimistic": True  # se non hai feedback reale
+            "set_position_topic": topics["cover_setpos"],   # invii 0..100
+            "optimistic": True
+            # Se in futuro pubblichi lo stato posizione:
+            # "position_topic": topics["cover_position"],
+            # "position_open": 100,
+            # "position_closed": 0,
         })
 
-    elif domain in ("binary_sensor",):
-        # Stato ON/OFF; es. "ON" per attivo
+    elif domain == "binary_sensor":
+        # es. campanello: dovrai pubblicare "on"/"off" su topics["state"]
         payload.update({
-            "payload_on": "ON",
-            "payload_off": "OFF",
+            "state_topic": topics["state"],
+            "payload_on": "on",
+            "payload_off": "off",
+            "device_class": "occupancy"  # o "motion", "doorbell" non esiste; scegli tu
         })
 
-    elif domain in ("sensor",):
-        # Sensor generico; puoi aggiungere unit_of_measurement e device_class
+    elif domain == "sensor":
+        # sensori temperatura: pubblichi il valore in chiaro su /status
         payload.update({
-            "value_template": "{{ value_json.value }}",
-            # "unit_of_measurement": "°C",
-            # "device_class": "temperature",
+            "state_topic": topics["state"],
+            "device_class": "temperature",
+            "unit_of_measurement": "°C",
+            "state_class": "measurement",
         })
 
-    elif domain in ("climate",):
-        # Climate via MQTT è più articolato; se ora non lo gestisci,
-        # puoi rimandare. Qui un esempio minimale in “mancato supporto”:
-        payload = None  # per ora non pubblichiamo discovery climate
+    elif domain == "lock":
+        # se/quando implementi sblocco/chiusura su topic dedicati
+        return None  # per ora non pubblichiamo discovery lock
+
+    else:
+        return None
 
     return domain, object_id, payload
 
 def publish_discovery(nome_attuatore: str, tipo_attuatore: str, retain=True):
-    domain, object_id, payload = _build_discovery_payload(nome_attuatore, tipo_attuatore)
-    if payload is None:
-        return  # non pubblichiamo nulla per tipi non gestiti al momento
+    res = _build_discovery_payload(nome_attuatore, tipo_attuatore)
+    if not res:
+        return
+    domain, object_id, payload = res
     topic = f"homeassistant/{domain}/{object_id}/config"
     _publish.single(
         topic,
@@ -174,7 +195,10 @@ def publish_discovery(nome_attuatore: str, tipo_attuatore: str, retain=True):
     return topic
 
 def unpublish_discovery(nome_attuatore: str, tipo_attuatore: str):
-    domain, object_id, _ = _build_discovery_payload(nome_attuatore, tipo_attuatore)
+    res = _build_discovery_payload(nome_attuatore, tipo_attuatore)
+    if not res:
+        return
+    domain, object_id, _ = res
     topic = f"homeassistant/{domain}/{object_id}/config"
     _publish.single(
         topic,
@@ -185,6 +209,8 @@ def unpublish_discovery(nome_attuatore: str, tipo_attuatore: str):
         retain=True,
     )
     return topic
+# ------------------------------------------------------------------------------ 
+
 # ------------------------------------------------------------------------------ 
 
 
@@ -395,14 +421,10 @@ class AGGIORNA_TIPO_ATTUATORE_JOSN(tornado.web.RequestHandler):
         if ("nome_attuatore" in data and "tipo_attuatore" in data):
             old_attuatore = dbm.RICHIESTA_ATTUATORE(data['nome_attuatore'])
             dbm.AGGIORNA_ATTUATORE_xTipo(data['nome_attuatore'],data['tipo_attuatore'].lower())
-
-			# UNPUBLISH vecchio domain
-			if old_attuatore:
-				unpublish_discovery(old_attuatore['nome_attuatore'], old_attuatore['tipo_attuatore'])
-
-			# PUBLISH nuovo domain
-			publish_discovery(data['nome_attuatore'], data['tipo_attuatore'])			
-						
+            # UNPUBLISH vecchio domain
+            unpublish_discovery(old_attuatore['nome_attuatore'], old_attuatore['tipo_attuatore'])
+            # PUBLISH nuovo domain
+            publish_discovery(data['nome_attuatore'], data['tipo_attuatore'])			
             await q.put(old_attuatore)
 class RIMUOVI_ATTUATORE_JOSN(tornado.web.RequestHandler):
     global q
@@ -422,10 +444,7 @@ class RIMUOVI_ATTUATORE_JOSN(tornado.web.RequestHandler):
         if ("nome_attuatore" in data):
             old_attuatore = dbm.RICHIESTA_ATTUATORE(data['nome_attuatore'])
             dbm.RIMUOVE_ATTUATORE(data['nome_attuatore'])
-			
-			if old_attuatore:
-				unpublish_discovery(old_attuatore['nome_attuatore'], old_attuatore['tipo_attuatore'])
-			
+            unpublish_discovery(old_attuatore['nome_attuatore'], old_attuatore['tipo_attuatore'])
             await q.put(old_attuatore)
 class AGGIUNGI_ATTUATORE_JOSN(tornado.web.RequestHandler):
     global q
@@ -444,18 +463,14 @@ class AGGIUNGI_ATTUATORE_JOSN(tornado.web.RequestHandler):
         data = json.loads(self.request.body)
         if ("nome_attuatore" in data and "tipo_attuatore" in data and "indirizzo_Ambiente" in data and "indirizzo_PL" in data):
             dbm.AGGIUNGI_ATTUATORE(data['nome_attuatore'],data['tipo_attuatore'].lower(),data['indirizzo_Ambiente'],data['indirizzo_PL'])
-			
-
-			# PUBBLICA DISCOVERY
-			publish_discovery(data['nome_attuatore'], data['tipo_attuatore'])
-
-			
-			
-			
+            # PUBBLICA DISCOVERY
+            publish_discovery(data['nome_attuatore'], data['tipo_attuatore'])
             if ("timer_salita" in data and "timer_discesa" in data):
                 dbm.AGGIORNA_TIMER_SERRANDETAPPARELLE_UP(data['nome_attuatore'],data['timer_salita'])
                 dbm.AGGIORNA_TIMER_SERRANDETAPPARELLE_DW(data['nome_attuatore'],data['timer_discesa'])
             await q.put(1)
+
+
 class AGGIORNA_TIMER_SERRANDETAPPARELLE_JOSN(tornado.web.RequestHandler):
     global q
     #x react
