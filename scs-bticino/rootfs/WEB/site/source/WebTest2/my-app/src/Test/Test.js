@@ -40,6 +40,15 @@ function Test() {
 
       _client.on("connect", () => {
         console.log("MQTT connesso:", url);
+        _client.publish("ciao","ciaooooooooooooooooooo1");
+        _client.publish("ciao","ciaooooooooooooooooooo2");
+        _client.publish("ciao","ciaooooooooooooooooooo3");
+        _client.publish("ciao","ciaooooooooooooooooooo4");
+        _client.publish("ciao","ciaooooooooooooooooooo5");
+
+        console.log("✅ MQTT connesso:", url);
+
+
         _client.subscribe("/scsshield/device/+/status");
         _client.subscribe("/scsshield/device/+/status/percentuale");
         _client.subscribe("/scsshield/device/+/modalita_termostato_impostata");
