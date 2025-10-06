@@ -25,7 +25,7 @@ RUN chmod +x /app/run.sh
 # Dipendenze Python (aggiungi qui se usi un requirements.txt)
 RUN pip install --no-cache-dir \
     janus asyncserial asyncio-mqtt tinydb gmqtt uvloop tornado \
-    paho-mqtt debugpy gpiozero lgpio
+    paho-mqtt debugpy
 
 # Lavoriamo nella cartella che contiene main.py
 WORKDIR /app/app

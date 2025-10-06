@@ -3,20 +3,17 @@ from asyncio.events import get_child_watcher
 import time
 import os
 import janus
-from gpiozero import LED
 import subprocess
 import json
-
 import SCS
 import mqtt2
 from serialhandler import SerialHandler
-
 import databaseAttuatori
-
 import nodered
 import logging
 import sys
 import importlib.machinery
+import os, time, atexit
 
 # Configurazione logging
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
@@ -54,6 +51,53 @@ logger.info(f"Debug Mode: {DEBUG_MODE}")
 logger.info(f"Log Level: {LOG_LEVEL}")
 logger.info("="*50)
 
+
+GPIO_PIN = 12
+GPIO_BASE = f"/sys/class/gpio/gpio{GPIO_PIN}"
+
+def _w(path, val):
+    with open(path, "w") as f:
+        f.write(val)
+
+def gpio12_setup():
+    try:
+        if not os.path.exists(GPIO_BASE):
+            _w("/sys/class/gpio/export", str(GPIO_PIN))
+            time.sleep(0.05)
+        _w(f"{GPIO_BASE}/direction", "out")
+    except Exception as e:
+        print(f"[GPIO] setup warning: {e}")
+
+def gpio12_set(value: int):
+    try:
+        _w(f"{GPIO_BASE}/value", "1" if value else "0")
+    except Exception as e:
+        print(f"[GPIO] write warning: {e}")
+
+def gpio12_cleanup():
+    try:
+        _w("/sys/class/gpio/unexport", str(GPIO_PIN))
+    except Exception:
+        pass
+
+
+gpio12_setup()
+atexit.register(gpio12_cleanup)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Carica webapp
 dir_path = os.path.dirname(os.path.realpath(__file__))
 dir_path_weblist = dir_path.split('/')
@@ -66,8 +110,11 @@ dir_path_web = s + 'WEB/'
 webapp = importlib.machinery.SourceFileLoader('webapp', dir_path_web + 'webapp.py').load_module()
 
 # GPIO e database
-enable_opto = LED(12)
-enable_opto.on()
+gpio12_set(1)  # accendi abilitazione opto
+# …
+# quando vuoi spegnere:
+# gpio12_set(0)
+
 
 dbm = databaseAttuatori.configurazione_database()
 
