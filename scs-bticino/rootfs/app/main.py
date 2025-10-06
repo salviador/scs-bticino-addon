@@ -56,41 +56,59 @@ logger.info(f"Log Level: {LOG_LEVEL}")
 logger.info("="*50)
 
 
-GPIO_PIN = 12
-GPIO_BASE = f"/sys/class/gpio/gpio{GPIO_PIN}"
+import logging
+import sys
 
-def _w(path, val):
-    with open(path, "w") as f:
-        f.write(val)
+# ... existing imports ...
+
+logger = logging.getLogger(__name__)
+
+# GPIO usando libgpiod (più affidabile in container)
+GPIO_PIN = 12
+gpio_chip = None
+gpio_line = None
 
 def gpio12_setup():
+    """Setup GPIO12 usando libgpiod"""
+    global gpio_chip, gpio_line
     try:
-        if not os.path.exists(GPIO_BASE):
-            _w("/sys/class/gpio/export", str(GPIO_PIN))
-            time.sleep(0.05)
-        _w(f"{GPIO_BASE}/direction", "out")
+        import gpiod
+        gpio_chip = gpiod.Chip('gpiochip0')
+        gpio_line = gpio_chip.get_line(GPIO_PIN)
+        gpio_line.request(consumer='scs_bticino', type=gpiod.LINE_REQ_DIR_OUT, default_vals=[0])
+        logger.info(f"✓ GPIO{GPIO_PIN} initialized successfully")
+        return True
     except Exception as e:
-        print(f"[GPIO] setup warning: {e}")
+        logger.warning(f"⚠ GPIO setup failed (non-critical): {e}")
+        logger.warning("  The add-on will continue without GPIO control")
+        return False
 
 def gpio12_set(value: int):
+    """Imposta valore GPIO12"""
+    global gpio_line
     try:
-        _w(f"{GPIO_BASE}/value", "1" if value else "0")
+        if gpio_line:
+            gpio_line.set_value(1 if value else 0)
+            return True
     except Exception as e:
-        print(f"[GPIO] write warning: {e}")
+        logger.debug(f"GPIO write warning: {e}")
+    return False
 
 def gpio12_cleanup():
+    """Cleanup GPIO resources"""
+    global gpio_chip, gpio_line
     try:
-        _w("/sys/class/gpio/unexport", str(GPIO_PIN))
+        if gpio_line:
+            gpio_line.release()
+        if gpio_chip:
+            gpio_chip.close()
+        logger.info("✓ GPIO cleanup completed")
     except Exception:
         pass
 
-
-gpio12_setup()
+# Setup GPIO at startup
+gpio_available = gpio12_setup()
 atexit.register(gpio12_cleanup)
-
-
-
-
 
 
 
@@ -113,16 +131,27 @@ dir_path_web = s + 'WEB/'
 
 webapp = importlib.machinery.SourceFileLoader('webapp', dir_path_web + 'webapp.py').load_module()
 
+
 # GPIO e database
-gpio12_set(1)  # accendi abilitazione opto
-# …
-# quando vuoi spegnere:
-# gpio12_set(0)
+# NEW
+if gpio_available:
+    gpio12_set(1)
+    logger.info("✓ GPIO12 enabled (opto active)")
+else:
+    logger.warning("⚠ Running without GPIO control - some features may be limited")
+
 
 
 dbm = databaseAttuatori.configurazione_database()
 
-loop = asyncio.get_event_loop()
+# OLD (deprecated)
+# loop = asyncio.get_event_loop()
+
+# NEW
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+
+
 
 lock_uartTX = asyncio.Lock()
 lock_refresh_Database = asyncio.Lock()
