@@ -65,72 +65,56 @@ logger = logging.getLogger(__name__)
 
 # GPIO usando libgpiod (più affidabile in container)
 GPIO_PIN = 12
-gpio_chip = None
-gpio_line = None
-
-def gpio12_setup():
-    """Autodiscovery del chip che espone la linea BCM 12 e richiesta come output."""
-    global gpio_chip, gpio_line
-    try:
-        import gpiod
-
-        # Prova i chip più comuni su RPi5: 0..5, scegli il primo che accetta la linea 12
-        last_err = None
-        for chip_name in [f'gpiochip{i}' for i in range(0, 6)]:
-            try:
-                ch = gpiod.Chip(chip_name)
-                ln = ch.get_line(12)  # BCM12 -> offset 12
-                ln.request(consumer='scs_bticino', type=gpiod.LINE_REQ_DIR_OUT, default_vals=[0])
-                # Se siamo qui, l'abbiamo preso
-                gpio_chip, gpio_line = ch, ln
-                logger.info(f"✓ GPIO12 initialized on {chip_name}")
-                return True
-            except Exception as e:
-                last_err = e
-                try:
-                    ch.close()
-                except Exception:
-                    pass
-
-        raise last_err if last_err else FileNotFoundError("No gpiochip accepted line 12")
-
-    except Exception as e:
-        logger.warning(f"⚠ GPIO setup failed (non-critical): {e}")
-        logger.warning("  The add-on will continue without GPIO control")
-        return False
+gpio_available = False
 
 def gpio12_set(value: int):
-    """Imposta valore GPIO12"""
-    global gpio_line
+    """Imposta GPIO12 usando sysfs"""
     try:
-        if gpio_line:
-            gpio_line.set_value(1 if value else 0)
-            return True
+        # Percorso sysfs
+        gpio_base = f"/sys/class/gpio/gpio{GPIO_PIN}"
+        
+        # Export se necessario
+        if not os.path.exists(gpio_base):
+            with open("/sys/class/gpio/export", "w") as f:
+                f.write(str(GPIO_PIN))
+            time.sleep(0.1)
+        
+        # Imposta direzione
+        with open(f"{gpio_base}/direction", "w") as f:
+            f.write("out")
+        
+        # Imposta valore
+        with open(f"{gpio_base}/value", "w") as f:
+            f.write("1" if value else "0")
+        
+        return True
     except Exception as e:
-        logger.debug(f"GPIO write warning: {e}")
-    return False
+        logger.debug(f"GPIO operation failed: {e}")
+        return False
 
 def gpio12_cleanup():
-    """Cleanup GPIO resources"""
-    global gpio_chip, gpio_line
+    """Spegni GPIO e cleanup"""
     try:
-        if gpio_line:
-            gpio_line.release()
-        if gpio_chip:
-            gpio_chip.close()
-        logger.info("✓ GPIO cleanup completed")
-    except Exception:
+        gpio12_set(0)
+        time.sleep(0.05)
+        with open("/sys/class/gpio/unexport", "w") as f:
+            f.write(str(GPIO_PIN))
+    except:
         pass
 
-# Setup GPIO at startup
-gpio_available = gpio12_setup()
 atexit.register(gpio12_cleanup)
 
 
-
-
-
-
+# Test GPIO
+logger.info("Testing GPIO...")
+if os.path.exists("/sys/class/gpio"):
+    if gpio12_set(1):
+        logger.info("✓ GPIO12 activated successfully")
+        gpio_available = True
+    else:
+        logger.warning("⚠ GPIO control failed - continuing without it")
+else:
+    logger.warning("⚠ /sys/class/gpio not available - running without GPIO")
 
 
 
