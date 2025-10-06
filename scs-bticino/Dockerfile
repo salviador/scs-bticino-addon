@@ -11,6 +11,7 @@ RUN apk add --no-cache \
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
+ENV GPIOZERO_PIN_FACTORY=rpigpio
 
 # --- COPIE CORRETTE ---
 # Porta la tua app (dove c'è main.py) in /app/app
@@ -24,7 +25,7 @@ RUN chmod +x /app/run.sh
 # Dipendenze Python (aggiungi qui se usi un requirements.txt)
 RUN pip install --no-cache-dir \
     janus asyncserial asyncio-mqtt tinydb gmqtt uvloop tornado \
-    paho-mqtt debugpy gpiozero
+    paho-mqtt debugpy gpiozero RPi.GPIO
 
 # Lavoriamo nella cartella che contiene main.py
 WORKDIR /app/app
