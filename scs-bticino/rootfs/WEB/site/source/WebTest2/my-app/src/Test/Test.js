@@ -7,12 +7,12 @@ const ADDRESS_SERVER = "/";
 
 function Test() {
   const [lista_dispositivi, setListaDispositivi] = useState([]);
-  const [mqttClient, setMqttClient] = useState(null);
+  const [MqttClient, setMqttClient] = useState([]);
   const [MQTT_data, setMQTT_data] = useState("");
   const [DebugSCSbus, setDebugSCSbus] = useState("");
 
   useEffect(() => {
-    let _client = null;
+    let client = null;
 
     const loadDevices = async () => {
       const data = await fetch(ADDRESS_SERVER + "GetConfigurazionereact.json").then(r => r.json());
@@ -33,44 +33,46 @@ function Test() {
       console.log("MQTT url..............:", url);
       console.log("options:", options);
 
-
       // 2) connetti
-      _client = mqtt.connect(url, options);
-      setMqttClient(_client);
+      client = mqtt.connect(url, options);
+      setMqttClient(client);
 
-      _client.on("connect", () => {
-        console.log("MQTT connesso:", url);
-        _client.publish("ciao","ciaooooooooooooooooooo1");
-        _client.publish("ciao","ciaooooooooooooooooooo2");
-        _client.publish("ciao","ciaooooooooooooooooooo3");
-        _client.publish("ciao","ciaooooooooooooooooooo4");
-        _client.publish("ciao","ciaooooooooooooooooooo5");
+      client.on("connect", () => {
+        console.log("MQTT Connesso....ok!");        
+        client.publish("ciao","ciaooooooooooooooooooo1");
+        client.publish("ciao","ciaooooooooooooooooooo2");
+        client.publish("ciao","ciaooooooooooooooooooo3");
+        client.publish("ciao","ciaooooooooooooooooooo4");
+        client.publish("ciao","ciaooooooooooooooooooo5");
 
         console.log("✅ MQTT connesso:", url);
 
 
-        _client.subscribe("/scsshield/device/+/status");
-        _client.subscribe("/scsshield/device/+/status/percentuale");
-        _client.subscribe("/scsshield/device/+/modalita_termostato_impostata");
-        _client.subscribe("/scsshield/device/+/temperatura_termostato_impostata");
-        // _client.subscribe("/scsshield/debug/bus");
+        client.subscribe("/scsshield/device/+/status");
+        client.subscribe("/scsshield/device/+/status/percentuale");
+        client.subscribe("/scsshield/device/+/modalita_termostato_impostata");
+        client.subscribe("/scsshield/device/+/temperatura_termostato_impostata");
+          // _client.subscribe("/scsshield/debug/bus");
       });
 
-      _client.on("error", (err) => {
+      client.on("error", (err) => {
         console.error("MQTT ERROR:", err?.message || err);
-        try { _client.end(); } catch {}
+        try { client.end(); } catch {}
       });
 
-      _client.on("message", (topic, payload) => {
+      client.on("message", (topic, payload, packet) => {
         const data = new TextDecoder("utf-8").decode(payload);
-        if (topic === "/scsshield/debug/bus") {
-          setDebugSCSbus(prev => [...prev, data + "\n"]);
-          return;
+        if (topic.localeCompare("/scsshield/debug/bus") == 0) {
+            setDebugSCSbus(DebugSCSbus => [...DebugSCSbus, data + '\n']);
+        } else {
+            var m = (topic).split("/");
+            var nomeDevice = m[3];
+            var mesg = (data).toLowerCase();
+            const dd = { "nome_attuatore": nomeDevice, "stato": mesg, "topic": topic };
+            setMQTT_data(dd);
+            console.log(dd.nome_attuatore);
+            console.log(dd.stato);
         }
-        const parts = topic.split("/");
-        const nomeDevice = parts[3] || "";
-        const mesg = data.toLowerCase();
-        setMQTT_data({ nome_attuatore: nomeDevice, stato: mesg, topic });
       });
     };
 
@@ -79,36 +81,42 @@ function Test() {
       await connectMqtt();
     })();
 
+
     return () => {
-      try {
-        if (_client) {
-          _client.unsubscribe("/scsshield/device/+/status");
-          _client.unsubscribe("/scsshield/device/+/status/percentuale");
-          _client.unsubscribe("/scsshield/device/+/modalita_termostato_impostata");
-          _client.unsubscribe("/scsshield/device/+/temperatura_termostato_impostata");
-          _client.end(true);
-        }
-      } catch {}
-    };
+        console.log("CLOSEEE");
+        setListaDispositivi([]);
+
+        client.unsubscribe("/scsshield/device/+/status");
+        client.unsubscribe("/scsshield/device/+/status/percentuale");
+        client.unsubscribe("/scsshield/device/+/modalita_termostato_impostata");
+        client.unsubscribe("/scsshield/device/+/temperatura_termostato_impostata");
+        client.end();
+        //MqttClient.close();
+        // cleaning up the listeners here
+    }
   }, []);
 
-  return (
-    <>
-      <div className="container-fluid">
-        {lista_dispositivi.map((device, i) => (
-          <div key={i} style={{ marginBottom: "50px" }}>
-            {/* nome prop corretto: clientMQTT */}
-            <Dispositivi device={device} mqttdata={MQTT_data} clientMQTT={mqttClient} />
-          </div>
-        ))}
-      </div>
-      {/* Debug opzionale
-      <div className="DebugSCSbus" style={{ textAlign: "center" }}>
-        <textarea style={{ width: "80%" }} value={DebugSCSbus} rows={12} cols={50} />
-      </div>
-      */}
-    </>
-  );
+ return (
+        <>
+            <div className="container-fluid">
+                {lista_dispositivi.map((device, i) => (
+                    <div key={i} style={{marginBottom:"50px"}} >
+                        <Dispositivi device={device} mqttdata={MQTT_data} clientMWTT={MqttClient} />
+                    </div>
+                ))}
+            </div>
+            {
+            /*<div className="DebugSCSbus" style={{ textAlign: "center" }}>
+                <textarea style={{ width: "80%" }} value={DebugSCSbus} rows={12} cols={50} name="Debug Bus" placeholder='' />
+            </div>
+            */
+            }
+        </>
+    );
+
+
+
+
 }
 
 export default Test;

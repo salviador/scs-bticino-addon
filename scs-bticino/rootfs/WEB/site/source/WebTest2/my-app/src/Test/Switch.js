@@ -3,7 +3,7 @@ import { Container, Navbar, Nav, Button, Card, Row, Col } from 'react-bootstrap'
 
 import "./../App.css";
 
-function ON_OFF({ device, valuedataRT, clientMQTT }) {
+function ON_OFF({ device, valuedataRT, clientMWTT }) {
     //Stato
     const [statoONOFF, setstatoONOFF] = useState("lamp_disabilitata.svg");
 
@@ -22,28 +22,26 @@ function ON_OFF({ device, valuedataRT, clientMQTT }) {
 
 
     const on_button = () => {
-        console.log("MQTT Client:", clientMQTT);
-        console.log("Publishing topic:", "/scsshield/device/" + device.nome_attuatore + "/switch");        
-        if (clientMQTT && clientMQTT.connected) {
-            if (clientMQTT.connected) {
+        if (clientMWTT) {
+            if (clientMWTT.connected) {
                 let topic = "/scsshield/device/" + device.nome_attuatore + "/switch";
-                clientMQTT.publish(topic, "on")
+                clientMWTT.publish(topic, "on")
             }
         }
     };
     const t_button = () => {
-        if (clientMQTT) {
-            if (clientMQTT.connected) {
+        if (clientMWTT) {
+            if (clientMWTT.connected) {
                 let topic = "/scsshield/device/" + device.nome_attuatore + "/switch";
-                clientMQTT.publish(topic, "t")
+                clientMWTT.publish(topic, "t")
             }
         }
     };
     const off_button = () => {
-        if (clientMQTT) {
-            if (clientMQTT.connected) {
+        if (clientMWTT) {
+            if (clientMWTT.connected) {
                 let topic = "/scsshield/device/" + device.nome_attuatore + "/switch";
-                clientMQTT.publish(topic, "off")
+                clientMWTT.publish(topic, "off")
             }
         }
     };
