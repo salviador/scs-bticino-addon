@@ -18,7 +18,11 @@ import tornado
 import tornado.web
 import tornado.ioloop
 import tornado.httpserver
+
+import sys
+sys.path.insert(0, '/app/WEB')
 import webapp
+
 
 # Configurazione logging
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
