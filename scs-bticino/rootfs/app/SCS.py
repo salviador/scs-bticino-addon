@@ -1182,11 +1182,25 @@ class Campanello(SCSDevice):
 
     def start_timer(self, time):
         if((self.timer == None)or(self.timer.done()==True)):
-            #print("START TIMER")
+            # Pubblica subito "1" (campanello premuto)
+            if self.mqttclient != None:                
+                self.loop.create_task(
+                    self.mqttclient.post_to_MQTT(
+                        "/scsshield/device/" + super().Get_Nome_Attuatore() + "/status", 
+                        "1"
+                    )
+                )
+            # Avvia timer che dopo 'time' secondi pubblicherà "0"
             self.timer = Timerelapsed.Timer(time, self._timerCallback_elapsed)
-            if(self.mqttclient != None):                
-                self.loop.create_task(self.mqttclient.post_to_MQTT( "/scsshield/device/" + super().Get_Nome_Attuatore() + "/status", "1"))
-
+        else:
+            # Timer già attivo, estendi la durata pubblicando di nuovo "1"
+            if self.mqttclient != None:                
+                self.loop.create_task(
+                    self.mqttclient.post_to_MQTT(
+                        "/scsshield/device/" + super().Get_Nome_Attuatore() + "/status", 
+                        "1"
+                    )
+                )
     def stop_timer(self):
         if(self.timer != None):
             if(self.timer.done()==False):

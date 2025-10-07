@@ -289,6 +289,39 @@ async def Node_Red_flow(jqueqe):
         n.main()
 
 
+
+async def publish_all_discovery():
+    """Pubblica MQTT Discovery per tutti i dispositivi al boot"""
+    logger.info("Publishing MQTT Discovery for all devices...")
+    
+    # Aspetta che MQTT sia connesso
+    max_retries = 30
+    for i in range(max_retries):
+        if hasattr(scsmqtt, 'client') and scsmqtt.client.is_connected:
+            break
+        await asyncio.sleep(1)
+    else:
+        logger.error("MQTT not connected after 30s, skipping discovery publish")
+        return
+    
+    from webapp import publish_discovery
+    all_devices = dbm.RICHIESTA_TUTTI_ATTUATORI()
+    
+    for device in all_devices:
+        try:
+            nome = device['nome_attuatore']
+            tipo = device['tipo_attuatore']
+            publish_discovery(nome, tipo)
+            logger.info(f"✓ Published discovery for: {nome} ({tipo})")
+            await asyncio.sleep(0.1)  # rate limiting
+        except Exception as e:
+            logger.error(f"Failed to publish discovery for {device}: {e}")
+    
+    logger.info("✓ Discovery publish completed")
+    
+    
+    
+    
 def popula_device():
     """Legge il database e popola la lista device nella classe SCS.SCSshield"""
     shield.clearDevice()
@@ -453,15 +486,29 @@ async def mqtt_action(jqueqe):
                         elif tdevice.name == SCS.TYPE_INTERfACCIA.dimmer.name:
                             action = b[4]
                             if action.lower() == "dimmer":
-                                if message.lower() in ["on", "1"]:
-                                    await device.On(lock_uartTX)
-                                elif message.lower() in ["off", "0"]:
-                                    await device.Off(lock_uartTX)
-                                elif message.lower().startswith("t") or message.lower() == "2":
-                                    await device.Toggle(lock_uartTX)
-                                else:
-                                    await device.Set_Dimmer_percent(message, lock_uartTX)
+                                msg_lower = message.lower().strip()
+        
+                                # ✅ Gestione robusta di tutti i casi
+                                try:
+                                    # Prova a convertire in numero
+                                    brightness = int(message)
+                                    if 0 <= brightness <= 100:
+                                        await device.Set_Dimmer_percent(brightness, lock_uartTX)
+                                    else:
+                                        logger.warning(f"Dimmer {device_name}: valore {brightness} fuori range 0-100")
+                                except ValueError:
+                                    # Non è un numero, gestisci come comando testuale
+                                    if msg_lower in ["on", "1"]:
+                                        await device.On(lock_uartTX)
+                                    elif msg_lower in ["off", "0"]:
+                                        await device.Off(lock_uartTX)
+                                    elif msg_lower.startswith("t") or msg_lower == "2":
+                                        await device.Toggle(lock_uartTX)
+                                    else:
+                                        logger.warning(f"Dimmer {device_name}: comando sconosciuto '{message}'")
 
+
+                
                         elif tdevice.name == SCS.TYPE_INTERfACCIA.serrande_tapparelle.name:
                             action = b[4]
                             if action.lower() == "percentuale":
@@ -583,6 +630,11 @@ async def deviceReceiver_from_SCSbus(jqueqe):
                         if trama[1] == b'\xB8' and trama[3] == b'\x12' and trama[4] == b'\x0A':
                             device.Ricalcolo_Percent_from_timerelaspe()
                             device.stop_timer()
+                            
+                            # ✅ AGGIUNGI pubblicazione posizione dopo STOP:
+                            posizione = int(device.get_percentuale())
+                            await scsmqtt.post_to_MQTT(f"/scsshield/device/{ndevice}/status", str(posizione))
+                            
                         elif trama[1] == b'\xB8' and trama[3] == b'\x12' and trama[4] == b'\x08':
                             device.RecTimer(1)
                             device.start_timer((device.timer_salita_/1000)+2)
@@ -732,46 +784,6 @@ async def main():
     await asyncio.gather(*tasks)  # ← AGGIUNGI 'await' qui!
 
 
-class HealthHandler(tornado.web.RequestHandler):
-    def get(self):
-        devices_count = len(shield.getDevices())
-        mqtt_connected = hasattr(scsmqtt, 'client') and scsmqtt.client.is_connected
-        
-        health_data = {
-            "status": "ok",
-            "timestamp": time.time(),
-            "mqtt": {
-                "connected": mqtt_connected,
-                "host": os.getenv('MQTT_HOST'),
-                "port": os.getenv('MQTT_PORT')
-            },
-            "serial": {
-                "port": nameSerial,
-                "configured": True
-            },
-            "devices": {
-                "count": devices_count,
-                "types": {}
-            },
-            "system": {
-                "debug_mode": os.getenv('DEBUG_MODE') == '1',
-                "log_level": os.getenv('LOG_LEVEL')
-            }
-        }
-        
-        # Conta dispositivi per tipo
-        for device in shield.getDevices():
-            device_type = device.Get_Type().name
-            if device_type not in health_data["devices"]["types"]:
-                health_data["devices"]["types"][device_type] = 0
-            health_data["devices"]["types"][device_type] += 1
-        
-        self.set_header("Content-Type", "application/json")
-        self.write(json.dumps(health_data, indent=2))
-
-# In webapp.make_app(), aggiungi:
-(r"/health", HealthHandler),
-
 
 
 # Rimuovi queste righe:
@@ -782,19 +794,8 @@ class HealthHandler(tornado.web.RequestHandler):
 
 popula_device()
 
-#process = subprocess.Popen(['node-red-start'],
-#					stdout=subprocess.PIPE, 
-#					stderr=subprocess.PIPE)
-
-#logger(process)
-
-
-#process = subprocess.Popen(['systemctl', 'status nodered.service'],
-#					stdout=subprocess.PIPE, 
-#					stderr=subprocess.PIPE)                        
-
-#logger(process)
-    
+# ✅ Pubblica discovery all'avvio
+loop.create_task(publish_all_discovery())
 
 loop.create_task(main())
 loop.run_forever()
