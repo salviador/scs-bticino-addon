@@ -18,6 +18,10 @@ import importlib.machinery
 
 logger = logging.getLogger(__name__)
 
+
+DEBUG_MODE = str(os.getenv('DEBUG_MODE', 'false')).lower() in ('1','true','yes','on')
+
+
 # ============================================================================
 # PATH E CONFIGURAZIONE
 # ============================================================================
@@ -50,10 +54,19 @@ q_nodered = None
 # ============================================================================
 
 def _slugify(value: str) -> str:
-    """Converte nome dispositivo in slug valido"""
+    """Converte nome dispositivo in slug valido (USATO OVUNQUE)"""
     s = re.sub(r"\s+", "_", value.strip())
     s = re.sub(r"[^a-zA-Z0-9_]", "", s)
     return s.lower()
+
+# ✅ ESPORTA la funzione per usarla in altri moduli
+def get_device_slug(nome_attuatore: str) -> str:
+    """Ritorna lo slug del dispositivo (da usare nei topic MQTT)"""
+    return _slugify(nome_attuatore)
+
+# ============================================================================
+# MQTT DISCOVERY HELPERS
+# ============================================================================
 
 DOMAIN_MAP = {
     "on_off": "switch",
@@ -190,7 +203,7 @@ def _build_discovery_payload(nome_attuatore: str, tipo_attuatore: str):
 
     return domain, object_id, payload
 
-
+            
 def publish_discovery(nome_attuatore: str, tipo_attuatore: str, retain=True):
     """Pubblica discovery MQTT per Home Assistant"""
     res = _build_discovery_payload(nome_attuatore, tipo_attuatore)

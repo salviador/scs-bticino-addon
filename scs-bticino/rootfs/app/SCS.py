@@ -638,8 +638,17 @@ class Serranda(SCSDevice):
             self.lastComando = 0
 
 
-            if(self.mqttclient != None):                
-                self.loop.create_task(self.mqttclient.post_to_MQTT( "/scsshield/device/" + super().Get_Nome_Attuatore() + "/status", "{:.0f}".format(self.stato_percentuale)  ))
+            if(self.mqttclient != None):				
+                import webapp
+                device_slug = webapp.get_device_slug(super().Get_Nome_Attuatore())
+                
+                self.loop.create_task(
+                    self.mqttclient.post_to_MQTT(
+                        f"/scsshield/device/{device_slug}/status", 
+                        "{:.0f}".format(self.stato_percentuale)
+                    )
+                )
+				
 
 
         else:
@@ -1177,30 +1186,31 @@ class Campanello(SCSDevice):
         self.loop = loop
 
     async def _timerCallback_elapsed(self):
-        if(self.mqttclient != None):                
-            self.loop.create_task(self.mqttclient.post_to_MQTT( "/scsshield/device/" + super().Get_Nome_Attuatore() + "/status", "0"))
+        if(self.mqttclient != None):
+            import webapp
+            device_slug = webapp.get_device_slug(super().Get_Nome_Attuatore())
+            
+            self.loop.create_task(
+                self.mqttclient.post_to_MQTT(
+                    f"/scsshield/device/{device_slug}/status", 
+                    "0"
+                )
+            )
 
     def start_timer(self, time):
         if((self.timer == None)or(self.timer.done()==True)):
-            # Pubblica subito "1" (campanello premuto)
-            if self.mqttclient != None:                
+            if self.mqttclient != None:
+                import webapp
+                device_slug = webapp.get_device_slug(super().Get_Nome_Attuatore())
+                
                 self.loop.create_task(
                     self.mqttclient.post_to_MQTT(
-                        "/scsshield/device/" + super().Get_Nome_Attuatore() + "/status", 
+                        f"/scsshield/device/{device_slug}/status", 
                         "1"
                     )
                 )
-            # Avvia timer che dopo 'time' secondi pubblicherà "0"
             self.timer = Timerelapsed.Timer(time, self._timerCallback_elapsed)
-        else:
-            # Timer già attivo, estendi la durata pubblicando di nuovo "1"
-            if self.mqttclient != None:                
-                self.loop.create_task(
-                    self.mqttclient.post_to_MQTT(
-                        "/scsshield/device/" + super().Get_Nome_Attuatore() + "/status", 
-                        "1"
-                    )
-                )
+
     def stop_timer(self):
         if(self.timer != None):
             if(self.timer.done()==False):

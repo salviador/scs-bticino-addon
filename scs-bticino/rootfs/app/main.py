@@ -18,10 +18,11 @@ import tornado
 import tornado.web
 import tornado.ioloop
 import tornado.httpserver
+import webapp
 
 # Configurazione logging
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
-DEBUG_MODE = os.getenv('DEBUG_MODE', '0') == '1'
+DEBUG_MODE = str(os.getenv('DEBUG_MODE', 'false')).lower() in ('1','true','yes','on')
 
 logging.basicConfig(
     level=getattr(logging, LOG_LEVEL),
@@ -415,33 +416,36 @@ async def tsk_refresh_database(jqueqe):
                 try:
                     nomeAtt = v['nome_attuatore']
                     tipoAtt = v['tipo_attuatore']
+                    
+                    # ✅ USA SLUG per reset topic
+                    device_slug = webapp.get_device_slug(nomeAtt)
 
                     if(tipoAtt == 'on_off'):
-                        await scsmqtt.post_to_MQTT_retain_reset("/scsshield/device/" + nomeAtt + "/status")
-                        await scsmqtt.post_to_MQTT_retain_reset("/scsshield/device/" + nomeAtt + "/switch")
+                        await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/status")
+                        await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/switch")
                     elif(tipoAtt == 'dimmer'):
-                        await scsmqtt.post_to_MQTT_retain_reset("/scsshield/device/" + nomeAtt + "/status")
-                        await scsmqtt.post_to_MQTT_retain_reset("/scsshield/device/" + nomeAtt + "/dimmer")
-                        await scsmqtt.post_to_MQTT_retain_reset("/scsshield/device/" + nomeAtt + "/status/percentuale")
+                        await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/status")
+                        await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/dimmer")
+                        await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/status/percentuale")
                     elif(tipoAtt == 'serrande_tapparelle'):
-                        await scsmqtt.post_to_MQTT_retain_reset("/scsshield/device/" + nomeAtt + "/status")
-                        await scsmqtt.post_to_MQTT_retain_reset("/scsshield/device/" + nomeAtt + "/percentuale")
+                        await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/status")
+                        await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/percentuale")
                     elif(tipoAtt == 'sensori_temperatura'):
-                        await scsmqtt.post_to_MQTT_retain_reset("/scsshield/device/" + nomeAtt + "/request")
-                        await scsmqtt.post_to_MQTT_retain_reset("/scsshield/device/" + nomeAtt + "/status")
+                        await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/request")
+                        await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/status")
                     elif(tipoAtt == 'termostati'):
-                        await scsmqtt.post_to_MQTT_retain_reset("/scsshield/device/" + nomeAtt + "/status")
-                        await scsmqtt.post_to_MQTT_retain_reset("/scsshield/device/" + nomeAtt + "/temperatura_termostato_impostata")
-                        await scsmqtt.post_to_MQTT_retain_reset("/scsshield/device/" + nomeAtt + "/modalita_termostato_impostata")
-                        await scsmqtt.post_to_MQTT_retain_reset("/scsshield/device/" + nomeAtt + "/set_temp_termostato")
-                        await scsmqtt.post_to_MQTT_retain_reset("/scsshield/device/" + nomeAtt + "/set_modalita_termostato")
+                        await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/status")
+                        await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/temperatura_termostato_impostata")
+                        await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/modalita_termostato_impostata")
+                        await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/set_temp_termostato")
+                        await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/set_modalita_termostato")
                     elif(tipoAtt == 'gruppi'):
-                        await scsmqtt.post_to_MQTT_retain_reset("/scsshield/device/" + nomeAtt + "/switch")
-                        await scsmqtt.post_to_MQTT_retain_reset("/scsshield/device/" + nomeAtt + "/status")
+                        await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/switch")
+                        await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/status")
                     elif(tipoAtt == 'campanello_porta'):
-                        await scsmqtt.post_to_MQTT_retain_reset("/scsshield/device/" + nomeAtt + "/status")
+                        await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/status")
                     elif(tipoAtt == 'serrature'):
-                        await scsmqtt.post_to_MQTT_retain_reset("/scsshield/device/" + nomeAtt + "/sblocca")
+                        await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/sblocca")
 
                 except KeyError:
                     pass
@@ -450,6 +454,7 @@ async def tsk_refresh_database(jqueqe):
         except Exception as e:
             logger.error("Error in tsk_refresh_database")
             logger.error(e)
+            
 
 
 async def mqtt_action(jqueqe):
@@ -465,12 +470,16 @@ async def mqtt_action(jqueqe):
             mtopicbase = '/' + b[1] + '/' + b[2] + '/'
             
             if "/scsshield/device/#"[:-1] in mtopicbase:
-                device_name = b[3]
+                device_slug_from_topic = b[3]
                 devices = shield.getDevices()
                 
                 for device in devices:
                     ndevice = device.Get_Nome_Attuatore()
-                    if ndevice == device_name:
+                    
+                    # ✅ Converti nome device in slug per confronto
+                    device_slug = webapp.get_device_slug(ndevice)
+
+                    if device_slug == device_slug_from_topic:
                         tdevice = device.Get_Type()
                         
                         if tdevice.name == SCS.TYPE_INTERfACCIA.on_off.name:
@@ -495,7 +504,7 @@ async def mqtt_action(jqueqe):
                                     if 0 <= brightness <= 100:
                                         await device.Set_Dimmer_percent(brightness, lock_uartTX)
                                     else:
-                                        logger.warning(f"Dimmer {device_name}: valore {brightness} fuori range 0-100")
+                                        logger.warning(f"Dimmer {device_slug}: valore {brightness} fuori range 0-100")
                                 except ValueError:
                                     # Non è un numero, gestisci come comando testuale
                                     if msg_lower in ["on", "1"]:
@@ -505,7 +514,7 @@ async def mqtt_action(jqueqe):
                                     elif msg_lower.startswith("t") or msg_lower == "2":
                                         await device.Toggle(lock_uartTX)
                                     else:
-                                        logger.warning(f"Dimmer {device_name}: comando sconosciuto '{message}'")
+                                        logger.warning(f"Dimmer {device_slug}: comando sconosciuto '{message}'")
 
 
                 
@@ -588,6 +597,11 @@ async def deviceReceiver_from_SCSbus(jqueqe):
             for device in devices:
                 type = device.Get_Type()
                 ndevice = device.Get_Nome_Attuatore()
+                
+                
+                device_slug = webapp.get_device_slug(ndevice)
+
+                
                 addA = device.Get_Address_A()
                 addPL = device.Get_Address_PL()
 
@@ -605,9 +619,10 @@ async def deviceReceiver_from_SCSbus(jqueqe):
                         statoDevice_in_Bus = int.from_bytes(trama[4], "big")
                         device.Set_Stato(statoDevice_in_Bus)
                         if statoDevice_in_Bus == 1:
-                            await scsmqtt.post_to_MQTT("/scsshield/device/" + ndevice + "/status", "off")
+                            # ✅ USA SLUG invece di ndevice
+                            await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/status", "off")
                         else:
-                            await scsmqtt.post_to_MQTT("/scsshield/device/" + ndevice + "/status", "on")
+                            await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/status", "on")
                     
                     # DIMMER
                     elif len(trama) == 7 and trama[1] == b'\xB8' and type.name == SCS.TYPE_INTERfACCIA.dimmer.name:
@@ -615,12 +630,12 @@ async def deviceReceiver_from_SCSbus(jqueqe):
                         device.Set_Stato(statoDevice_in_Bus)
                         dimperc = device.Get_Dimmer_percent()
                         if statoDevice_in_Bus == 1:
-                            await scsmqtt.post_to_MQTT("/scsshield/device/" + ndevice + "/status", "off")
+                            await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/status", "off")
                         elif statoDevice_in_Bus == 0:
-                            await scsmqtt.post_to_MQTT("/scsshield/device/" + ndevice + "/status", "on")
+                            await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/status", "on")
                         else:
-                            await scsmqtt.post_to_MQTT("/scsshield/device/" + ndevice + "/status", "on")
-                            await scsmqtt.post_to_MQTT("/scsshield/device/" + ndevice + "/status/percentuale", dimperc)
+                            await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/status", "on")
+                            await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/status/percentuale", dimperc)
 
                     # SERRANDE TAPPARELLE
                     elif len(trama) == 7 and trama[1] == b'\xB8' and type.name == SCS.TYPE_INTERfACCIA.serrande_tapparelle.name:
@@ -633,7 +648,7 @@ async def deviceReceiver_from_SCSbus(jqueqe):
                             
                             # ✅ AGGIUNGI pubblicazione posizione dopo STOP:
                             posizione = int(device.get_percentuale())
-                            await scsmqtt.post_to_MQTT(f"/scsshield/device/{ndevice}/status", str(posizione))
+                            await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/status", str(posizione))
                             
                         elif trama[1] == b'\xB8' and trama[3] == b'\x12' and trama[4] == b'\x08':
                             device.RecTimer(1)
@@ -647,14 +662,14 @@ async def deviceReceiver_from_SCSbus(jqueqe):
                         rawtemp = int.from_bytes(trama[4], "big")
                         temp = rawtemp / 10
                         device.Set_Stato(temp)
-                        await scsmqtt.post_to_MQTT("/scsshield/device/" + ndevice + "/status", format(temp, '.1f'))
+                        await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/status", format(temp, '.1f'))
 
                     # Sensori Temperature > 25.5
                     elif len(trama) == 7 and trama[1] == b'\xB5' and type.name == SCS.TYPE_INTERfACCIA.sensori_temperatura.name:
                         rawtemp = int.from_bytes(trama[4], "big")
                         temp = rawtemp / 10 + 25.6
                         device.Set_Stato(temp)
-                        await scsmqtt.post_to_MQTT("/scsshield/device/" + ndevice + "/status", format(temp, '.1f'))
+                        await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/status", format(temp, '.1f'))
 
                     # Campanello
                     elif len(trama) == 7 and trama[1] == b'\x91' and trama[3] == b'\x60' and trama[4] == b'\x08' and type.name == SCS.TYPE_INTERfACCIA.campanello_porta.name:
@@ -670,7 +685,7 @@ async def deviceReceiver_from_SCSbus(jqueqe):
                         if rawtemp != 0:
                             temperature_di_Setting = ((rawtemp - 6) * 0.50) + 3
                             device.Set_Temperatura_Termostato(temperature_di_Setting)
-                            await scsmqtt.post_to_MQTT("/scsshield/device/" + ndevice + "/temperatura_termostato_impostata", temperature_di_Setting)
+                            await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/temperatura_termostato_impostata", temperature_di_Setting)
 
                     # TERMOSTATO - Temperatura e Modalità
                     elif len(trama) > 7 and trama[1] == b'\xD2' and trama[3] == b'\x03' and SCS.bitwise_and_bytes(trama[4], b'\x0F') == b'\x04' and trama[5] == b'\x12' and type.name == SCS.TYPE_INTERfACCIA.termostati.name:
@@ -679,34 +694,34 @@ async def deviceReceiver_from_SCSbus(jqueqe):
                         tempv = msb * 256 + lsb
                         temp = tempv / 10
                         device.Set_Temperatura_Termostato(temp)
-                        await scsmqtt.post_to_MQTT("/scsshield/device/" + ndevice + "/temperatura_termostato_impostata", temp)
+                        await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/temperatura_termostato_impostata", temp)
 
                         bit1 = SCS.bitwise_and_bytes(trama[6], b'\x0F')
                         if bit1 in [b'\x02', b'\x00']:
                             device.Set_Modalita_Termostato(device.MODALITA.INVERNO)
-                            await scsmqtt.post_to_MQTT("/scsshield/device/" + ndevice + "/modalita_termostato_impostata", device.MODALITA.INVERNO.name)
+                            await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/modalita_termostato_impostata", device.MODALITA.INVERNO.name)
                         elif bit1 in [b'\x03', b'\x01']:
                             device.Set_Modalita_Termostato(device.MODALITA.ESTATE)
-                            await scsmqtt.post_to_MQTT("/scsshield/device/" + ndevice + "/modalita_termostato_impostata", device.MODALITA.ESTATE.name)
+                            await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/modalita_termostato_impostata", device.MODALITA.ESTATE.name)
                         elif trama[6] == b'\xFF':
                             device.Set_Modalita_Termostato(device.MODALITA.OFF)
-                            await scsmqtt.post_to_MQTT("/scsshield/device/" + ndevice + "/modalita_termostato_impostata", device.MODALITA.OFF.name)
+                            await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/modalita_termostato_impostata", device.MODALITA.OFF.name)
 
                     # TERMOSTATO - Temperature di Setting
                     elif len(trama) > 7 and trama[1] == b'\xD2' and trama[3] == b'\x03' and trama[4] == b'\x04' and trama[5] == b'\x0E' and type.name == SCS.TYPE_INTERfACCIA.termostati.name:
                         rawtemp = int.from_bytes(trama[7], "big")
                         temp = rawtemp / 10
                         device.Set_Temperatura_Termostato(temp)
-                        await scsmqtt.post_to_MQTT("/scsshield/device/" + ndevice + "/temperatura_termostato_impostata", temp)
+                        await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/temperatura_termostato_impostata", temp)
 
                 # Gruppi (address diverso)
                 elif len(trama) > 7 and address == trama[5] and trama[1] == b'\xEC' and type.name == SCS.TYPE_INTERfACCIA.gruppi.name:
                     statoDevice_in_Bus = int.from_bytes(trama[8], "big")
                     device.Set_Stato(statoDevice_in_Bus)
                     if statoDevice_in_Bus == 1:
-                        await scsmqtt.post_to_MQTT("/scsshield/device/" + ndevice + "/status", "off")
+                        await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/status", "off")
                     else:
-                        await scsmqtt.post_to_MQTT("/scsshield/device/" + ndevice + "/status", "on")
+                        await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/status", "on")
 
             # Pubblica trama raw
             s = ""
