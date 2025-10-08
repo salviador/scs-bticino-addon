@@ -38,8 +38,7 @@ Shield hardware dedicato che si collega ai GPIO del Raspberry Pi e comunica con 
 - **Compatibilità**: Raspberry Pi 3/4/5
 
 **Dove acquistare:**
-- [Sito ufficiale SCS Shield](https://scsshield.altervista.org/)
-- [Pagina dedicata Raspberry HA Add-on](http://scsshields.altervista.org/raspberry_haaddon.html)
+- [Sito ufficiale SCS Shield](https://scsshields.altervista.org/)
 - [Pagina contatti](http://scsshields.altervista.org/contatti.html)
 
 ### Requisiti Raspberry Pi
@@ -386,7 +385,7 @@ Se vedi `⚠ Running without GPIO control`:
 
 ## 🤝 Supporto e Community
 
-- **Sito ufficiale**: [https://scsshield.altervista.org/](https://scsshield.altervista.org/)
+- **Sito ufficiale**: [https://scsshields.altervista.org/](https://scsshields.altervista.org/)
 - **Contatti**: [http://scsshields.altervista.org/contatti.html](http://scsshields.altervista.org/contatti.html)
 - **Documentazione completa**: Disponibile sul sito ufficiale
 
