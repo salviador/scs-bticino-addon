@@ -1,5 +1,5 @@
 name: "SCS BTicino Bridge"
-version: "1.0.9.23"
+version: "1.0.9.24"
 slug: "scs_bticino"
 description: "Integrazione per bus SCS BTicino tramite MQTT"
 arch:

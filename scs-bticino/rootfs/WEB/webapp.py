@@ -187,21 +187,27 @@ def _build_discovery_payload(nome_attuatore: str, tipo_attuatore: str):
             #"mode_state_template": "{% if value == 'OFF' %}off{% elif value == 'INVERNO' %}heat{% elif value == 'ESTATE' %}cool{% else %}off{% endif %}",
             #"mode_command_template": "{% if value == 'off' %}OFF{% elif value == 'heat' %}INVERNO{% elif value == 'cool' %}ESTATE{% endif %}",
             # ✅ VERSIONE INVERTITA (INVERNO=cool, ESTATE=heat)
-            "mode_state_template": "{% if value == 'OFF' %}off{% elif value == 'INVERNO' %}cool{% elif value == 'ESTATE' %}heat{% else %}off{% endif %}",
+            "mode_state_template": "{% if value == 'OFF' %}off{% elif value == 'ESTATE' %}heat{% elif value == 'INVERNO' %}cool{% else %}off{% endif %}",
             "mode_command_template": "{% if value == 'off' %}OFF{% elif value == 'heat' %}ESTATE{% elif value == 'cool' %}INVERNO{% endif %}",
 
         })
 
     elif domain == "lock":
+        # Cambia da lock a switch
+        domain = "switch"
         payload.update({
-            "command_topic": f"/scsshield/device/{object_id}/sblocca",
-            "payload_unlock": "sblocca",
-            "optimistic": True,
-            "state_locked": "locked",
-            "state_unlocked": "unlocked",
-            "retain": False,
-        })
-
+        "state_topic": f"/scsshield/device/{object_id}/status",
+        "command_topic": f"/scsshield/device/{object_id}/sblocca",
+        "state_on": "unlocked",
+        "state_off": "locked",
+        "payload_on": "sblocca",
+        "payload_off": "locked",  # non usato, ma necessario
+        "optimistic": False,
+        "retain": False,
+        "icon": "mdi:lock-open-variant",
+    })
+    # Aggiorna unique_id
+    payload["unique_id"] = f"scs_{object_id}_unlock_switch"
 
 
 
