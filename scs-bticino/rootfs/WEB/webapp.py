@@ -205,9 +205,9 @@ def _build_discovery_payload(nome_attuatore: str, tipo_attuatore: str):
         "optimistic": False,
         "retain": False,
         "icon": "mdi:lock-open-variant",
-    })
-    # Aggiorna unique_id
-    payload["unique_id"] = f"scs_{object_id}_unlock_switch"
+        })
+        # Aggiorna unique_id
+        payload["unique_id"] = f"scs_{object_id}_unlock_switch"
 
 
 
