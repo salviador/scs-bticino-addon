@@ -708,10 +708,10 @@ async def deviceReceiver_from_SCSbus(jqueqe):
                         bit1 = SCS.bitwise_and_bytes(trama[6], b'\x0F')
                         if bit1 in [b'\x02', b'\x00']:
                             device.Set_Modalita_Termostato(device.MODALITA.ESTATE)
-                            await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/modalita_termostato_impostata", device.MODALITA.INVERNO.name)
+                            await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/modalita_termostato_impostata", device.MODALITA.ESTATE.name)
                         elif bit1 in [b'\x03', b'\x01']:
                             device.Set_Modalita_Termostato(device.MODALITA.INVERNO)
-                            await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/modalita_termostato_impostata", device.MODALITA.ESTATE.name)
+                            await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/modalita_termostato_impostata", device.MODALITA.INVERNO.name)
                         elif trama[6] == b'\xFF':
                             device.Set_Modalita_Termostato(device.MODALITA.OFF)
                             await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/modalita_termostato_impostata", device.MODALITA.OFF.name)
