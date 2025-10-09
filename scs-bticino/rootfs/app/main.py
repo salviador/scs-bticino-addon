@@ -557,6 +557,17 @@ async def mqtt_action(jqueqe):
                             action = b[4]
                             if action.lower() == "sblocca":
                                 await device.Sblocca(lock_uartTX)
+                                # ✅ Auto-reset dopo 1 secondo
+                                await asyncio.sleep(1)
+                                device_slug = webapp.get_device_slug(ndevice)
+                                await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/status", "locked")
+                                
+                                
+                                
+                                
+                                
+                                
+                                
 
             elif topic == '/scsshield/SendtoBus':
                 s1 = message.split(' ')
