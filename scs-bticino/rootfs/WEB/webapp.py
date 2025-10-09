@@ -173,6 +173,22 @@ def _build_discovery_payload(nome_attuatore: str, tipo_attuatore: str):
         })
 
     elif domain == "climate":
+        #payload.update({
+        #    "current_temperature_topic": topics["state"],
+        #    "temperature_state_topic": f"/scsshield/device/{object_id}/temperatura_termostato_impostata",
+        #    "temperature_command_topic": f"/scsshield/device/{object_id}/set_temp_termostato",
+        #    "mode_state_topic": f"/scsshield/device/{object_id}/modalita_termostato_impostata",
+        #    "mode_command_topic": f"/scsshield/device/{object_id}/set_modalita_termostato",
+        #    "modes": ["off", "heat", "cool"],
+        #    "min_temp": 3,
+        #    "max_temp": 35,
+        #    "temp_step": 0.5,
+        #    "temperature_unit": "C",
+        #    "mode_state_template": "{% if value == 'OFF' %}off{% elif value == 'INVERNO' %}heat{% elif value == 'ESTATE' %}cool{% else %}off{% endif %}",
+        #    "mode_command_template": "{% if value == 'off' %}OFF{% elif value == 'heat' %}INVERNO{% elif value == 'cool' %}ESTATE{% endif %}",
+
+        #})
+        
         payload.update({
             "current_temperature_topic": topics["state"],
             "temperature_state_topic": f"/scsshield/device/{object_id}/temperatura_termostato_impostata",
@@ -184,10 +200,19 @@ def _build_discovery_payload(nome_attuatore: str, tipo_attuatore: str):
             "max_temp": 35,
             "temp_step": 0.5,
             "temperature_unit": "C",
-            "mode_state_template": "{% if value == 'OFF' %}off{% elif value == 'INVERNO' %}heat{% elif value == 'ESTATE' %}cool{% else %}off{% endif %}",
-            "mode_command_template": "{% if value == 'off' %}OFF{% elif value == 'heat' %}INVERNO{% elif value == 'cool' %}ESTATE{% endif %}",
-
-        })
+            # ✅ INVERSIONE: quando bus dice INVERNO → HA mostra COOL, quando bus dice ESTATE → HA mostra HEAT
+            "mode_state_template": "{% if value == 'OFF' %}off{% elif value == 'INVERNO' %}cool{% elif value == 'ESTATE' %}heat{% else %}off{% endif %}",
+            "mode_command_template": "{% if value == 'off' %}OFF{% elif value == 'heat' %}ESTATE{% elif value == 'cool' %}INVERNO{% endif %}",
+        })        
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
     elif domain == "lock":
         # Cambia da lock a switch
