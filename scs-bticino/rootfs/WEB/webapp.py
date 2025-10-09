@@ -184,11 +184,8 @@ def _build_discovery_payload(nome_attuatore: str, tipo_attuatore: str):
             "max_temp": 35,
             "temp_step": 0.5,
             "temperature_unit": "C",
-            #"mode_state_template": "{% if value == 'OFF' %}off{% elif value == 'INVERNO' %}heat{% elif value == 'ESTATE' %}cool{% else %}off{% endif %}",
-            #"mode_command_template": "{% if value == 'off' %}OFF{% elif value == 'heat' %}INVERNO{% elif value == 'cool' %}ESTATE{% endif %}",
-            # ✅ VERSIONE INVERTITA (INVERNO=cool, ESTATE=heat)
-            "mode_state_template": "{% if value == 'OFF' %}off{% elif value == 'ESTATE' %}heat{% elif value == 'INVERNO' %}cool{% else %}off{% endif %}",
-            "mode_command_template": "{% if value == 'off' %}OFF{% elif value == 'heat' %}ESTATE{% elif value == 'cool' %}INVERNO{% endif %}",
+            "mode_state_template": "{% if value == 'OFF' %}off{% elif value == 'INVERNO' %}heat{% elif value == 'ESTATE' %}cool{% else %}off{% endif %}",
+            "mode_command_template": "{% if value == 'off' %}OFF{% elif value == 'heat' %}INVERNO{% elif value == 'cool' %}ESTATE{% endif %}",
 
         })
 
