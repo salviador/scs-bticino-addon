@@ -213,23 +213,15 @@ def _build_discovery_payload(nome_attuatore: str, tipo_attuatore: str):
         
         
         
-
     elif domain == "lock":
-        # Cambia da lock a switch
-        domain = "switch"
+        domain = "button"
         payload.update({
-        "state_topic": f"/scsshield/device/{object_id}/status",
-        "command_topic": f"/scsshield/device/{object_id}/sblocca",
-        "state_on": "unlocked",
-        "state_off": "locked",
-        "payload_on": "sblocca",
-        "payload_off": "locked",  # non usato, ma necessario
-        "optimistic": False,
-        "retain": False,
-        "icon": "mdi:lock-open-variant",
+            "command_topic": f"/scsshield/device/{object_id}/sblocca",
+            "payload_press": "sblocca",
+            "device_class": "restart",
+            "retain": False,
         })
-        # Aggiorna unique_id
-        payload["unique_id"] = f"scs_{object_id}_unlock_switch"
+        payload["unique_id"] = f"scs_{object_id}_unlock_btn"
 
 
 
