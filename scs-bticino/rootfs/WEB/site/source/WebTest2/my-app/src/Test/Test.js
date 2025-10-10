@@ -67,7 +67,7 @@ function Test() {
         } else {
             var m = (topic).split("/");
             var nomeDevice = m[3];
-            var mesg = (data).toLowerCase();
+            var mesg = (data)   //.toLowerCase();
             const dd = { "nome_attuatore": nomeDevice, "stato": mesg, "topic": topic };
             setMQTT_data(dd);
             console.log(dd.nome_attuatore);
