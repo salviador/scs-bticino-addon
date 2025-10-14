@@ -864,12 +864,33 @@ class UploadDatabaseHandler(tornado.web.RequestHandler):
                 
                 logger.info("✅ Database uploaded successfully")
                 
-                # Ricarica i dispositivi
+                # ✅ Ricarica il database in memoria
+                dbm.__init__()  # Reinizializza per ricaricare il file
+                
+                # ✅ Pubblica discovery per TUTTI i dispositivi
+                logger.info("📤 Publishing MQTT Discovery for all devices...")
+                all_devices = dbm.RICHIESTA_TUTTI_ATTUATORI()
+                
+                discovery_count = 0
+                for device in all_devices:
+                    try:
+                        nome = device['nome_attuatore']
+                        tipo = device['tipo_attuatore']
+                        publish_discovery(nome, tipo)
+                        discovery_count += 1
+                        logger.info(f"✅ Published discovery for: {nome} ({tipo})")
+                        await asyncio.sleep(0.1)  # Rate limiting
+                    except Exception as e:
+                        logger.error(f"Failed to publish discovery for {device}: {e}")
+                
+                logger.info(f"✅ Published {discovery_count} device discoveries")
+                
+                # ✅ Notifica il sistema per ricaricare i dispositivi
                 await q.put(1)
                 
                 self.write(json.dumps({
                     "status": "ok",
-                    "message": "Database uploaded and reloaded"
+                    "message": f"Database uploaded, {discovery_count} devices published to Home Assistant"
                 }))
                 
             else:
@@ -886,6 +907,7 @@ class UploadDatabaseHandler(tornado.web.RequestHandler):
             
             self.set_status(500)
             self.write(json.dumps({"error": str(e)}))
+
 
 
 class BackupDatabaseHandler(tornado.web.RequestHandler):
