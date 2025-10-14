@@ -764,7 +764,165 @@ class HealthHandler(tornado.web.RequestHandler):
         self.set_header("Content-Type", "application/json")
         self.write(json.dumps(health_data, indent=2))
 
+import shutil
+import time
+import glob
 
+# ... dopo gli altri handler ...
+
+class DownloadDatabaseHandler(tornado.web.RequestHandler):
+    """Scarica il database JSON"""
+    def get(self):
+        self.set_header("Access-Control-Allow-Origin", "*")
+        self.set_header('Content-Type', 'application/json')
+        self.set_header('Content-Disposition', 'attachment; filename=scs_database.json')
+        
+        db_path = '/data/scs_database.json'
+        
+        if os.path.exists(db_path):
+            try:
+                with open(db_path, 'r') as f:
+                    content = f.read()
+                self.write(content)
+                logger.info("✅ Database downloaded")
+            except Exception as e:
+                logger.error(f"Error reading database: {e}")
+                self.set_status(500)
+                self.write(json.dumps({"error": str(e)}))
+        else:
+            logger.warning("Database file not found")
+            self.set_status(404)
+            self.write(json.dumps({"error": "Database not found"}))
+
+
+class UploadDatabaseHandler(tornado.web.RequestHandler):
+    """Carica un database JSON"""
+    def options(self):
+        self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        self.set_header("Access-Control-Allow-Origin", "*")
+        self.set_header("Access-Control-Allow-Headers", "Content-Type")
+        self.set_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        self.set_status(204)
+        self.finish()
+
+    async def post(self):
+        self.set_header("Access-Control-Allow-Origin", "*")
+        global q
+        
+        db_path = '/data/scs_database.json'
+        backup_path = '/data/scs_database_backup.json'
+        
+        try:
+            # Backup del database esistente
+            if os.path.exists(db_path):
+                shutil.copy2(db_path, backup_path)
+                logger.info("✅ Database backup created")
+            
+            # Ricevi il file
+            if 'database' in self.request.files:
+                file_content = self.request.files['database'][0]['body']
+                
+                # Valida che sia JSON valido
+                try:
+                    json_data = json.loads(file_content)
+                    
+                    # ✅ Normalizza tutti i nomi in lowercase
+                    if '_default' in json_data:
+                        for key, device in json_data['_default'].items():
+                            if 'nome_attuatore' in device:
+                                device['nome_attuatore'] = device['nome_attuatore'].lower()
+                    
+                    # Ri-serializza con i nomi normalizzati
+                    file_content = json.dumps(json_data, indent=2).encode('utf-8')
+                    
+                except json.JSONDecodeError as e:
+                    logger.error(f"Invalid JSON: {e}")
+                    self.set_status(400)
+                    self.write(json.dumps({"error": "Invalid JSON format"}))
+                    return
+                
+                # Salva il nuovo database
+                with open(db_path, 'wb') as f:
+                    f.write(file_content)
+                
+                logger.info("✅ Database uploaded successfully")
+                
+                # Ricarica i dispositivi
+                await q.put(1)
+                
+                self.write(json.dumps({
+                    "status": "ok",
+                    "message": "Database uploaded and reloaded"
+                }))
+                
+            else:
+                self.set_status(400)
+                self.write(json.dumps({"error": "No file uploaded"}))
+                
+        except Exception as e:
+            logger.error(f"Error uploading database: {e}")
+            
+            # Ripristina backup in caso di errore
+            if os.path.exists(backup_path):
+                shutil.copy2(backup_path, db_path)
+                logger.info("❌ Error occurred, backup restored")
+            
+            self.set_status(500)
+            self.write(json.dumps({"error": str(e)}))
+
+
+class BackupDatabaseHandler(tornado.web.RequestHandler):
+    """Crea un backup manuale del database"""
+    def options(self):
+        self.set_header("Access-Control-Allow-Origin", "*")
+        self.set_header("Access-Control-Allow-Headers", "Content-Type")
+        self.set_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        self.set_status(204)
+        self.finish()
+
+    def post(self):
+        self.set_header("Access-Control-Allow-Origin", "*")
+        
+        db_path = '/data/scs_database.json'
+        
+        # Crea cartella backups se non esiste
+        os.makedirs('/data/backups', exist_ok=True)
+        
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        backup_path = f'/data/backups/scs_database_{timestamp}.json'
+        
+        try:
+            if os.path.exists(db_path):
+                shutil.copy2(db_path, backup_path)
+                logger.info(f"✅ Manual backup created: {backup_path}")
+                
+                # Mantieni solo gli ultimi 20 backup
+                backups = sorted(glob.glob('/data/backups/scs_database_*.json'))
+                if len(backups) > 20:
+                    for old_backup in backups[:-20]:
+                        os.remove(old_backup)
+                        logger.info(f"🗑️ Removed old backup: {old_backup}")
+                
+                self.write(json.dumps({
+                    "status": "ok",
+                    "backup_file": os.path.basename(backup_path)
+                }))
+            else:
+                self.set_status(404)
+                self.write(json.dumps({"error": "Database not found"}))
+        except Exception as e:
+            logger.error(f"Error creating backup: {e}")
+            self.set_status(500)
+            self.write(json.dumps({"error": str(e)}))
+
+
+
+    
+    
+    
+    
+    
+    
 # ============================================================================
 # UTILITY FUNCTIONS
 # ============================================================================
@@ -820,6 +978,18 @@ def make_app():
         
         (r"/mqtt_config.json", MQTTConfigHandler),
         (r"/health", HealthHandler),
+        
+        
+        (r"/download_database", DownloadDatabaseHandler),
+        (r"/upload_database", UploadDatabaseHandler),
+        (r"/backup_database", BackupDatabaseHandler),
+        
+    
+    
+    
+        
+        
+        
     ], debug=True)
 
 
