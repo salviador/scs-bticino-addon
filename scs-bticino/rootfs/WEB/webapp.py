@@ -492,11 +492,28 @@ class RIMUOVI_ATTUATORE_JOSN(tornado.web.RequestHandler):
         self.set_header("Access-Control-Allow-Origin", "*")
         global q
         data = json.loads(self.request.body)
+        
         if ("nome_attuatore" in data):
+            # ✅ PRIMA recupera il dispositivo dal database
             old_attuatore = dbm.RICHIESTA_ATTUATORE(data['nome_attuatore'])
-            dbm.RIMUOVE_ATTUATORE(data['nome_attuatore'])
+            
+            # ✅ Verifica che esista
+            if old_attuatore is None:
+                logger.warning(f"Dispositivo '{data['nome_attuatore']}' non trovato nel database")
+                self.write(json.dumps({"status": "error", "message": "Device not found"}))
+                return
+            
+            # ✅ Rimuovi discovery da Home Assistant PRIMA di eliminare dal DB
             unpublish_discovery(old_attuatore['nome_attuatore'], old_attuatore['tipo_attuatore'])
+            
+            # ✅ POI elimina dal database
+            dbm.RIMUOVE_ATTUATORE(data['nome_attuatore'])
+            
+            # ✅ Notifica il sistema per ricaricare
             await q.put(old_attuatore)
+            
+            logger.info(f"✅ Dispositivo '{data['nome_attuatore']}' eliminato correttamente")
+            self.write(json.dumps({"status": "ok"}))
 
 class AGGIUNGI_ATTUATORE_JOSN(tornado.web.RequestHandler):
     def options(self):
