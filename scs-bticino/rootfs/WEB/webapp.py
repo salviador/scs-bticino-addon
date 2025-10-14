@@ -280,16 +280,16 @@ def unpublish_discovery(nome_attuatore: str, tipo_attuatore: str):
     try:
         publish.single(
             topic,
-            payload="",
+            payload="",  # ✅ Payload vuoto rimuove il dispositivo
             hostname=mqtt_host,
             port=mqtt_port,
             auth=auth_dict,
-            retain=True,
+            retain=True,  # ✅ IMPORTANTE: retain=True per cancellare il messaggio precedente
         )
-        logger.info(f"✓ Unpublished discovery: {topic}")
+        logger.info(f"✅ Unpublished discovery: {topic}")
         return topic
     except Exception as e:
-        logger.error(f"✗ Discovery unpublish failed for {nome_attuatore}: {e}")
+        logger.error(f"❌ Discovery unpublish failed for {nome_attuatore}: {e}")
         return None
 
 
