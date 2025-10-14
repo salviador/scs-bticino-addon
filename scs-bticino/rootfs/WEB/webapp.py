@@ -936,7 +936,9 @@ class BackupDatabaseHandler(tornado.web.RequestHandler):
 
     
     
-    
+class DatabaseHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.render('site/build/index.html')    
     
     
     
@@ -996,7 +998,8 @@ def make_app():
         (r"/mqtt_config.json", MQTTConfigHandler),
         (r"/health", HealthHandler),
         
-        
+        (r"/database.html", DatabaseHandler),  # ✅ AGGIUNGI QUESTA RIGA
+
         (r"/download_database", DownloadDatabaseHandler),
         (r"/upload_database", UploadDatabaseHandler),
         (r"/backup_database", BackupDatabaseHandler),

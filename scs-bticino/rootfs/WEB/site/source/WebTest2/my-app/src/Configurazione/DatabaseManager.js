@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Card, Button, Alert, Spinner } from 'react-bootstrap';
+import { Container, Card, Button, Alert, Spinner, Row, Col } from 'react-bootstrap';
 
 function DatabaseManager() {
     const [uploading, setUploading] = useState(false);
     const [message, setMessage] = useState(null);
-    const [messageType, setMessageType] = useState('info'); // 'success', 'danger', 'warning', 'info'
+    const [messageType, setMessageType] = useState('info');
 
     const showMessage = (text, type = 'info') => {
         setMessage(text);
@@ -42,7 +42,6 @@ function DatabaseManager() {
         const file = event.target.files[0];
         if (!file) return;
 
-        // Verifica che sia un file JSON
         if (!file.name.endsWith('.json')) {
             showMessage('❌ Seleziona un file JSON valido', 'danger');
             event.target.value = null;
@@ -64,7 +63,7 @@ function DatabaseManager() {
             const result = await response.json();
             
             if (response.ok) {
-                showMessage('✅ Database caricato con successo! Ricaricamento pagina...', 'success');
+                showMessage('✅ Database caricato! Ricaricamento pagina...', 'success');
                 setTimeout(() => {
                     window.location.reload();
                 }, 2000);
@@ -76,7 +75,7 @@ function DatabaseManager() {
             showMessage(`❌ Errore upload: ${error.message}`, 'danger');
         } finally {
             setUploading(false);
-            event.target.value = null; // Reset input
+            event.target.value = null;
         }
     };
 
@@ -99,83 +98,102 @@ function DatabaseManager() {
     };
 
     return (
-        <Card className="mb-4 shadow-sm">
-            <Card.Header>
-                <h4 className="my-0 font-weight-normal">🗄️ Gestione Database</h4>
-            </Card.Header>
-            <Card.Body>
-                {message && (
-                    <Alert variant={messageType} onClose={() => setMessage(null)} dismissible>
-                        {message}
-                    </Alert>
-                )}
+        <Container style={{ paddingTop: "2rem", paddingBottom: "2rem" }}>
+            <div className="pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center">
+                <h1 className="display-4">🗄️ Gestione Database</h1>
+                <p className="lead">Backup, scarica e carica il database di configurazione</p>
+            </div>
 
-                <div className="d-grid gap-2">
-                    <Button
-                        variant="success"
-                        size="lg"
-                        onClick={downloadDatabase}
-                        className="mb-2"
-                    >
-                        ⬇️ Scarica Database
-                    </Button>
+            <Row className="justify-content-center">
+                <Col lg={8}>
+                    <Card className="shadow-sm">
+                        <Card.Header className="bg-primary text-white">
+                            <h4 className="my-0">Operazioni Database</h4>
+                        </Card.Header>
+                        <Card.Body>
+                            {message && (
+                                <Alert variant={messageType} onClose={() => setMessage(null)} dismissible>
+                                    {message}
+                                </Alert>
+                            )}
 
-                    <div className="mb-2">
-                        <label htmlFor="upload-db" style={{ width: '100%' }}>
-                            <Button
-                                variant="primary"
-                                size="lg"
-                                as="span"
-                                disabled={uploading}
-                                style={{ width: '100%' }}
-                            >
-                                {uploading ? (
-                                    <>
-                                        <Spinner
+                            <div className="d-grid gap-3">
+                                <Button
+                                    variant="success"
+                                    size="lg"
+                                    onClick={downloadDatabase}
+                                >
+                                    ⬇️ Scarica Database
+                                </Button>
+
+                                <div>
+                                    <label htmlFor="upload-db" style={{ width: '100%' }}>
+                                        <Button
+                                            variant="primary"
+                                            size="lg"
                                             as="span"
-                                            animation="border"
-                                            size="sm"
-                                            role="status"
-                                            aria-hidden="true"
-                                            className="me-2"
-                                        />
-                                        Caricamento...
-                                    </>
-                                ) : (
-                                    '⬆️ Carica Database'
-                                )}
-                            </Button>
-                        </label>
-                        <input
-                            id="upload-db"
-                            type="file"
-                            accept=".json"
-                            onChange={uploadDatabase}
-                            disabled={uploading}
-                            style={{ display: 'none' }}
-                        />
-                    </div>
+                                            disabled={uploading}
+                                            style={{ width: '100%' }}
+                                        >
+                                            {uploading ? (
+                                                <>
+                                                    <Spinner
+                                                        as="span"
+                                                        animation="border"
+                                                        size="sm"
+                                                        role="status"
+                                                        aria-hidden="true"
+                                                        className="me-2"
+                                                    />
+                                                    Caricamento...
+                                                </>
+                                            ) : (
+                                                '⬆️ Carica Database'
+                                            )}
+                                        </Button>
+                                    </label>
+                                    <input
+                                        id="upload-db"
+                                        type="file"
+                                        accept=".json"
+                                        onChange={uploadDatabase}
+                                        disabled={uploading}
+                                        style={{ display: 'none' }}
+                                    />
+                                </div>
 
-                    <Button
-                        variant="warning"
-                        size="lg"
-                        onClick={createBackup}
-                    >
-                        💾 Crea Backup Manuale
-                    </Button>
-                </div>
+                                <Button
+                                    variant="warning"
+                                    size="lg"
+                                    onClick={createBackup}
+                                >
+                                    💾 Crea Backup Manuale
+                                </Button>
+                            </div>
 
-                <Alert variant="warning" className="mt-3 mb-0">
-                    <strong>⚠️ Attenzione:</strong>
-                    <ul className="mb-0 mt-2" style={{ fontSize: '0.9rem' }}>
-                        <li>Il caricamento sostituisce completamente il database esistente</li>
-                        <li>Viene creato automaticamente un backup prima del caricamento</li>
-                        <li>La pagina si ricaricherà automaticamente dopo il caricamento</li>
-                        <li>Assicurati che il file JSON sia valido prima di caricarlo</li>
-                    </ul>
-                </Alert>
-            </Card.Body>
-        </Card>
+                            <Alert variant="info" className="mt-4 mb-0">
+                                <strong>ℹ️ Informazioni:</strong>
+                                <ul className="mb-0 mt-2" style={{ fontSize: '0.9rem' }}>
+                                    <li><strong>Scarica:</strong> Salva una copia del database sul tuo computer</li>
+                                    <li><strong>Carica:</strong> Sostituisce il database attuale (viene creato un backup automatico)</li>
+                                    <li><strong>Backup:</strong> Crea una copia di sicurezza in /data/backups/ (max 20 backup)</li>
+                                    <li>La pagina si ricaricherà automaticamente dopo il caricamento</li>
+                                </ul>
+                            </Alert>
+
+                            <Alert variant="warning" className="mt-3 mb-0">
+                                <strong>⚠️ Attenzione:</strong>
+                                <ul className="mb-0 mt-2" style={{ fontSize: '0.9rem' }}>
+                                    <li>Il caricamento sostituisce completamente il database esistente</li>
+                                    <li>Assicurati che il file JSON sia valido prima di caricarlo</li>
+                                    <li>I dispositivi verranno ricaricati automaticamente</li>
+                                </ul>
+                            </Alert>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+        </Container>
     );
 }
 

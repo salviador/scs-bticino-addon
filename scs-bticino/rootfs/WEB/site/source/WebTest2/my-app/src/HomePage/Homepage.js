@@ -20,6 +20,10 @@ function Homepage() {
         history.push("noderedHome.html");
     };
 
+    const handleClickDatabase = () => {
+        history.push("database.html");
+    };
+
     return (
         <>
             <Container className="justify-content-md-center">
@@ -103,20 +107,20 @@ function Homepage() {
 
                     {/* CARD DATABASE */}
                     <div className="card mb-4 shadow-sm d-flex flex-column">
-                        <div className="card-header">
-                            <h4 className="my-0 font-weight-normal">Database</h4>
+                        <div className="card-header bg-success text-white">
+                            <h4 className="my-0 font-weight-normal">🗄️ Database</h4>
                         </div>
                         <div className="card-body d-flex flex-column">
                             <ul className="list-unstyled mt-3 mb-4">
-                                <li>Backup automatico</li>
-                                <li>Download database</li>
-                                <li>Upload database</li>
-                                <li>Ripristino configurazione</li>
+                                <li>💾 Backup automatico</li>
+                                <li>⬇️ Download database</li>
+                                <li>⬆️ Upload database</li>
+                                <li>🔄 Ripristino configurazione</li>
                             </ul>
                             <button 
                                 type="button" 
                                 className="btn btn-lg btn-block btn-success mt-auto" 
-                                onClick={() => history.push("configurazione.html")}
+                                onClick={handleClickDatabase}
                             >
                                 Gestisci
                             </button>

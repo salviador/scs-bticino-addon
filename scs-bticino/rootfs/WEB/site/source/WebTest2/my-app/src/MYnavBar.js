@@ -3,8 +3,6 @@ import { Container, Navbar, Nav, Button, Card, Row, Col } from 'react-bootstrap'
 
 import "./App.css"
 
-
-
 function MYnavBar() {
     return (
         <>
@@ -16,6 +14,7 @@ function MYnavBar() {
                         <Nav className="mr-auto">
                             <Nav.Link href="/">Home</Nav.Link>
                             <Nav.Link href="configurazione.html">Configurazioni</Nav.Link>
+                            <Nav.Link href="database.html">Database</Nav.Link>
                             <Nav.Link href="test.html">Test</Nav.Link>
                             <Nav.Link href="noderedHome.html">Node-Red</Nav.Link>                           
                         </Nav>
@@ -25,6 +24,5 @@ function MYnavBar() {
         </>
     );
 }
-
 
 export default MYnavBar;
