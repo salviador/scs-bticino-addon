@@ -5,6 +5,18 @@ import "./../App.css";
 
 const ADDRESS_SERVER = "/";
 
+
+
+// ✅ Funzione per convertire nome in slug (deve matchare quella di Python)
+const getDeviceSlug = (name) => {
+    return name.toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Rimuove accenti
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+};
+
+
 function Test() {
   const [lista_dispositivi, setListaDispositivi] = useState([]);
   const [MqttClient, setMqttClient] = useState([]);
@@ -68,10 +80,26 @@ function Test() {
             var m = (topic).split("/");
             var nomeDevice = m[3];
             var mesg = (data)   //.toLowerCase();
-            const dd = { "nome_attuatore": nomeDevice, "stato": mesg, "topic": topic };
-            setMQTT_data(dd);
-            console.log(dd.nome_attuatore);
-            console.log(dd.stato);
+			
+			/ ✅ Trova il dispositivo corrispondente allo slug
+			const matchingDevice = lista_dispositivi.find(dev => {
+				const slug = getDeviceSlug(dev.nome_attuatore);
+				return slug === deviceSlug;
+			});
+			
+			if (matchingDevice) {
+				const dd = { 
+					"nome_attuatore": matchingDevice.nome_attuatore,  // ✅ Usa il nome originale
+					"stato": mesg, 
+					"topic": topic 
+				};
+				setMQTT_data(dd);
+				console.log(dd.nome_attuatore);
+				console.log(dd.stato);
+			}
+		
+		
+		
         }
       });
     };
