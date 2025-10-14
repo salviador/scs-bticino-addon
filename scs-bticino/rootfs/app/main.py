@@ -475,6 +475,14 @@ async def mqtt_action(jqueqe):
             
             if "/scsshield/device/#"[:-1] in mtopicbase:
                 device_slug_from_topic = b[3]
+                
+                
+                # ✅ NORMALIZZA LO SLUG DAL TOPIC (converti in minuscolo)
+                import webapp
+                device_slug_from_topic = webapp.get_device_slug(device_slug_from_topic)
+                
+                      
+                
                 devices = shield.getDevices()
                 
                 for device in devices:
