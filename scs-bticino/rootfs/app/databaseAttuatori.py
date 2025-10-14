@@ -25,7 +25,9 @@ class configurazione_database:
         self.db = TinyDB(DB_PATH)
 
     def CHECHK_ESISTE_ATTUATORE(self, nome_attuatore):
-        if nome_attuatore is not None:
+        if nome_attuatore is not None:			
+            # ✅ Forza lowercase
+            nome_attuatore = nome_attuatore.lower()			
             UUID = Query()
             val = self.db.search(UUID.nome_attuatore == nome_attuatore)
             if len(val) > 0:
@@ -33,6 +35,8 @@ class configurazione_database:
         return False
 
     def AGGIUNGI_ATTUATORE(self, nome_attuatore, tipo_attuatore, indirizzo_Ambiente, indirizzo_PL):
+        nome_attuatore = nome_attuatore.lower() if nome_attuatore else None
+        
         if not self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
             # Insert new
             self.db.insert({
@@ -51,6 +55,10 @@ class configurazione_database:
             }, UUID.nome_attuatore == nome_attuatore)
 
     def AGGIORNA_ATTUATORE_xNome(self, nome_attuatore, nuovo_attuatore):
+        # ✅ Forza lowercase
+        nome_attuatore = nome_attuatore.lower() if nome_attuatore else None
+        nuovo_attuatore = nuovo_attuatore.lower() if nuovo_attuatore else None
+    
         if self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
             if not self.CHECHK_ESISTE_ATTUATORE(nuovo_attuatore):
                 UUID = Query()
@@ -94,6 +102,8 @@ class configurazione_database:
                            UUID.nome_attuatore == nome_attuatore)
 
     def RICHIESTA_ATTUATORE(self, nome_attuatore):
+        # ✅ Forza lowercase
+        nome_attuatore = nome_attuatore.lower() if nome_attuatore else None
         if self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
             nodo = Query()
             val = self.db.search(nodo.nome_attuatore == nome_attuatore)
@@ -129,6 +139,8 @@ class configurazione_database:
         return all_attuatori
 
     def RIMUOVE_ATTUATORE(self, nome_attuatore):
+        # ✅ Forza lowercase
+        nome_attuatore = nome_attuatore.lower() if nome_attuatore else None
         if self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
             UUID = Query()
             self.db.remove(UUID.nome_attuatore == nome_attuatore)

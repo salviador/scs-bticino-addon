@@ -62,7 +62,7 @@ def _slugify(value: str) -> str:
 # ✅ ESPORTA la funzione per usarla in altri moduli
 def get_device_slug(nome_attuatore: str) -> str:
     """Ritorna lo slug del dispositivo (da usare nei topic MQTT)"""
-    return _slugify(nome_attuatore)
+    return _slugify(nome_attuatore.lower())
 
 # ============================================================================
 # MQTT DISCOVERY HELPERS

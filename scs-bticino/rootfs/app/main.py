@@ -418,11 +418,11 @@ async def tsk_refresh_database(jqueqe):
 
             if(type(v) != int):
                 try:
-                    nomeAtt = v['nome_attuatore']
+                    nomeAtt = v['nome_attuatore'].lower()
                     tipoAtt = v['tipo_attuatore']
                     
                     # ✅ USA SLUG per reset topic
-                    device_slug = webapp.get_device_slug(nomeAtt)
+                    device_slug = nomeAtt
 
                     if(tipoAtt == 'on_off'):
                         await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/status")
@@ -474,24 +474,16 @@ async def mqtt_action(jqueqe):
             mtopicbase = '/' + b[1] + '/' + b[2] + '/'
             
             if "/scsshield/device/#"[:-1] in mtopicbase:
-                device_slug_from_topic = b[3]
+                device_slug_from_topic = b[3].lower()
                 
-                
-                # ✅ NORMALIZZA LO SLUG DAL TOPIC (converti in minuscolo)
-                import webapp
-                device_slug_from_topic = webapp.get_device_slug(device_slug_from_topic)
-                
-                      
                 
                 devices = shield.getDevices()
                 
                 for device in devices:
-                    ndevice = device.Get_Nome_Attuatore()
+                    ndevice = device.Get_Nome_Attuatore().lower()
                     
-                    # ✅ Converti nome device in slug per confronto
-                    device_slug = webapp.get_device_slug(ndevice)
 
-                    if device_slug == device_slug_from_topic:
+                    if ndevice == device_slug_from_topic:
                         tdevice = device.Get_Type()
                         
                         if tdevice.name == SCS.TYPE_INTERfACCIA.on_off.name:
@@ -613,10 +605,10 @@ async def deviceReceiver_from_SCSbus(jqueqe):
             devices = shield.getDevices()
             for device in devices:
                 type = device.Get_Type()
-                ndevice = device.Get_Nome_Attuatore()
+                ndevice = device.Get_Nome_Attuatore().lower()
                 
                 
-                device_slug = webapp.get_device_slug(ndevice)
+                device_slug = ndevice
 
                 
                 addA = device.Get_Address_A()

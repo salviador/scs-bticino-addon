@@ -74,14 +74,13 @@ function Test() {
             setDebugSCSbus(DebugSCSbus => [...DebugSCSbus, data + '\n']);
         } else {
             var m = (topic).split("/");
-            var deviceSlug = m[3];  // ✅ Questo è lo slug dal topic
+            var deviceNameFromTopic = m[3].toLowerCase();  // ✅ Questo è lo slug dal topic
             var mesg = (data);
             
-            // ✅ Trova il dispositivo corrispondente allo slug
-            const matchingDevice = lista_dispositivi.find(dev => {
-                const slug = getDeviceSlug(dev.nome_attuatore);
-                return slug === deviceSlug;
-            });
+			  // ✅ Confronta nomi in lowercase
+			  const matchingDevice = lista_dispositivi.find(dev => {
+				  return dev.nome_attuatore.toLowerCase() === deviceNameFromTopic;
+			  });
             
             if (matchingDevice) {
                 const dd = { 
