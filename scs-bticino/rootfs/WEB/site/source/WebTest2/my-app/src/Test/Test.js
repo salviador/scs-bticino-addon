@@ -5,15 +5,6 @@ import "./../App.css";
 
 const ADDRESS_SERVER = "/";
 
-// ✅ Funzione per convertire nome in slug (deve matchare quella di Python)
-const getDeviceSlug = (name) => {
-    return name.toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // Rimuove accenti
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_+|_+$/g, '');
-};
-
 function Test() {
   const [lista_dispositivi, setListaDispositivi] = useState([]);
   const [MqttClient, setMqttClient] = useState([]);
@@ -56,6 +47,7 @@ function Test() {
 
         console.log("✅ MQTT connesso:", url);
 
+
         client.subscribe("/scsshield/device/+/status");
         client.subscribe("/scsshield/device/+/status/percentuale");
         client.subscribe("/scsshield/device/+/modalita_termostato_impostata");
@@ -74,24 +66,12 @@ function Test() {
             setDebugSCSbus(DebugSCSbus => [...DebugSCSbus, data + '\n']);
         } else {
             var m = (topic).split("/");
-            var deviceNameFromTopic = m[3].toLowerCase();  // ✅ Questo è lo slug dal topic
-            var mesg = (data);
-            
-			  // ✅ Confronta nomi in lowercase
-			  const matchingDevice = lista_dispositivi.find(dev => {
-				  return dev.nome_attuatore.toLowerCase() === deviceNameFromTopic;
-			  });
-            
-            if (matchingDevice) {
-                const dd = { 
-                    "nome_attuatore": matchingDevice.nome_attuatore,  // ✅ Usa il nome originale
-                    "stato": mesg, 
-                    "topic": topic 
-                };
-                setMQTT_data(dd);
-                console.log(dd.nome_attuatore);
-                console.log(dd.stato);
-            }
+            var nomeDevice = m[3];
+            var mesg = (data)   //.toLowerCase();
+            const dd = { "nome_attuatore": nomeDevice, "stato": mesg, "topic": topic };
+            setMQTT_data(dd);
+            console.log(dd.nome_attuatore);
+            console.log(dd.stato);
         }
       });
     };
@@ -101,17 +81,16 @@ function Test() {
       await connectMqtt();
     })();
 
+
     return () => {
         console.log("CLOSEEE");
         setListaDispositivi([]);
 
-        if (client) {
-            client.unsubscribe("/scsshield/device/+/status");
-            client.unsubscribe("/scsshield/device/+/status/percentuale");
-            client.unsubscribe("/scsshield/device/+/modalita_termostato_impostata");
-            client.unsubscribe("/scsshield/device/+/temperatura_termostato_impostata");
-            client.end();
-        }
+        client.unsubscribe("/scsshield/device/+/status");
+        client.unsubscribe("/scsshield/device/+/status/percentuale");
+        client.unsubscribe("/scsshield/device/+/modalita_termostato_impostata");
+        client.unsubscribe("/scsshield/device/+/temperatura_termostato_impostata");
+        client.end();
         //MqttClient.close();
         // cleaning up the listeners here
     }
@@ -134,6 +113,10 @@ function Test() {
             }
         </>
     );
+
+
+
+
 }
 
 export default Test;
