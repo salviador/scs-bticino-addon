@@ -73,12 +73,13 @@ function Sensore1({ device, handle_CHANHE_NOME, handle_CHANHE_A, handle_CHANHE_P
     }
     //change , NOME ATTUATORE [se esiste]
     const handleChangeNOME_ATTUTATORE = (event) =>{
-        setinomeATTUATORE(event.target.value);
+        setinomeATTUATORE(event.target.value.toLowerCase());
     }
 
     const handleChangeNOME_ATTUTATOREupdateDATABASE = (event) =>{
+		const nuovoNomeNormalizzato = nomeATTUATORE.toLowerCase().trim();
         console.log("QUI CAMBIO IL NOME ATTUATORRE");
-        handle_CHANHE_NOME({nome_attuatore: device.nome_attuatore , nuovonome : nomeATTUATORE});
+        handle_CHANHE_NOME({nome_attuatore: device.nome_attuatore , nuovonome : nuovoNomeNormalizzato});
     }
 
 
@@ -215,7 +216,7 @@ function Sensore1({ device, handle_CHANHE_NOME, handle_CHANHE_A, handle_CHANHE_P
                     <Card.Header>
                         <Row>
                             <Col lg={4} style={{ textAlign: 'left' }} className="text-primary">
-                                <input type="text" className="form-control" value={nomeATTUATORE} onChange={handleChangeNOME_ATTUTATORE} onBlur={handleChangeNOME_ATTUTATOREupdateDATABASE} />
+                                <input type="text" className="form-control" value={nomeATTUATORE} onChange={handleChangeNOME_ATTUTATORE} onBlur={handleChangeNOME_ATTUTATOREupdateDATABASE} style={{ textTransform: 'lowercase' }} />
                             </Col>
                         </Row>
                     </Card.Header>

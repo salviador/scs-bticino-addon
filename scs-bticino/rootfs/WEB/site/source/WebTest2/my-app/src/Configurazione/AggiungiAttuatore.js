@@ -23,7 +23,7 @@ function AggiungiAttuatore({handel_AGIUNGInew} ) {
 
     //change , NOME ATTUATORE [se esiste]
     const handleChangeNOME_ATTUTATORE = (event) =>{
-        setinomeATTUATORE(event.target.value);
+        setinomeATTUATORE(event.target.value.toLowerCase());
     }
     const handleChangeNOME_ATTUTATOREupdateDATABASE = (event) =>{
         //Qui ho il nome Attuatore Completo
@@ -59,12 +59,15 @@ function AggiungiAttuatore({handel_AGIUNGInew} ) {
 
     //CLICK AGGIUNGI
     const handlClickAGGIUNGI = (event) =>{
+		
+		const nomeNormalizzato = nomeATTUATORE.toLowerCase().trim();
+
         if(optionsStateTipoAttuatori === "serrande_tapparelle"){
-            handel_AGIUNGInew({nome_attuatore: nomeATTUATORE, indirizzo_Ambiente : indirizzo_A,
+            handel_AGIUNGInew({nome_attuatore: nomeNormalizzato, indirizzo_Ambiente : indirizzo_A,
                 indirizzo_PL : indirizzo_PL, tipo_attuatore : optionsStateTipoAttuatori, 
                 timer_salita : TIMER_UP, timer_discesa: TIMER_DOWN });
         }else{
-            handel_AGIUNGInew({nome_attuatore: nomeATTUATORE, indirizzo_Ambiente : indirizzo_A,
+            handel_AGIUNGInew({nome_attuatore: nomeNormalizzato, indirizzo_Ambiente : indirizzo_A,
                 indirizzo_PL : indirizzo_PL, tipo_attuatore : optionsStateTipoAttuatori});
         }
         setinomeATTUATORE("");
@@ -186,7 +189,7 @@ function AggiungiAttuatore({handel_AGIUNGInew} ) {
                     <Card.Header className="bg-secondary ">
                         <Row>
                             <Col lg={4} style={{ textAlign: 'left' }} className="text-primary">
-                                <input type="text" className="form-control" value={nomeATTUATORE} placeholder="Inserisci il nome dell'Attuatore" onChange={handleChangeNOME_ATTUTATORE} onBlur={handleChangeNOME_ATTUTATOREupdateDATABASE} />
+                                <input type="text" className="form-control" value={nomeATTUATORE} placeholder="Inserisci il nome dell'Attuatore" onChange={handleChangeNOME_ATTUTATORE} onBlur={handleChangeNOME_ATTUTATOREupdateDATABASE} style={{ textTransform: 'lowercase' }} />
                             </Col>
                         </Row>
                     </Card.Header>

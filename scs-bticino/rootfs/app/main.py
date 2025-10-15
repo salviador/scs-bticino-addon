@@ -501,26 +501,21 @@ async def mqtt_action(jqueqe):
                             if action.lower() == "dimmer":
                                 msg_lower = message.lower().strip()
         
-                                # ✅ Gestione robusta di tutti i casi
+                                # ✅ PRIMA gestisci comandi speciali, POI i numeri
+                                if msg_lower in ["on", "1"]:
+                                    await device.On(lock_uartTX)
+                                elif msg_lower in ["off", "0"]:
+                                    await device.Off(lock_uartTX)
+                                elif msg_lower.startswith("t") or msg_lower == "2":
+                                    await device.Toggle(lock_uartTX)
+                                else:
+                                    # Tutto il resto è una percentuale                
                                 try:
-                                    # Prova a convertire in numero
                                     brightness = int(message)
-                                    if 0 <= brightness <= 100:
-                                        await device.Set_Dimmer_percent(brightness, lock_uartTX)
-                                    else:
-                                        logger.warning(f"Dimmer {device_slug}: valore {brightness} fuori range 0-100")
+                                    await device.Set_Dimmer_percent(brightness, lock_uartTX)
                                 except ValueError:
-                                    # Non è un numero, gestisci come comando testuale
-                                    if msg_lower in ["on", "1"]:
-                                        await device.On(lock_uartTX)
-                                    elif msg_lower in ["off", "0"]:
-                                        await device.Off(lock_uartTX)
-                                    elif msg_lower.startswith("t") or msg_lower == "2":
-                                        await device.Toggle(lock_uartTX)
-                                    else:
-                                        logger.warning(f"Dimmer {device_slug}: comando sconosciuto '{message}'")
-
-
+                                    logger.warning(f"Dimmer {device_slug}: comando sconosciuto '{message}'")
+                
                 
                         elif tdevice.name == SCS.TYPE_INTERfACCIA.serrande_tapparelle.name:
                             action = b[4]
