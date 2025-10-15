@@ -817,36 +817,40 @@ class Dimmer(SCSDevice):
             await asyncio.sleep(0)
 
     async def Set_Dimmer_percent(self, val, look):
-        percentuale = int(val)
- 
-        #print("WAIT MUTEX --> [Dimmer.set_Dimmer] " +  super().Get_Nome_Attuatore() )
-        if(percentuale > 100):
+        percentuale = int(val)    
+    
+        if percentuale > 100:
             percentuale = 100
-        if(percentuale < 0):
+        if percentuale < 0:
             percentuale = 0
-
-        """
-            0% = 10
-            100& = 100%
-        """
-
         async with look:      
             try:  
-                #print("--------------> [Dimmer.set_Dimmer] " +  super().Get_Nome_Attuatore())
-
-                percmod = self.valmap(percentuale,0,100,10,100)       #percentuale varia da 0:100 a --> 10:100
-
-                v = int(percmod / 10)
-                valueDimmer = dimmerCodifica[v]
-
-                stato_rele = await self.scsshield.interfaccia_send_COMANDO(super().Get_Address_A(), super().Get_Address_PL(),  int.from_bytes(valueDimmer, "big"), 1)
+                # ✅ ARROTONDA alla decina più vicina (protocollo BTicino)
+                percentuale_arrotondata = round(percentuale / 10) * 10
+                indice = int(percentuale_arrotondata / 10)
+            
+                # Clamp per sicurezza
+                indice = max(0, min(10, indice))
+            
+                valueDimmer = dimmerCodifica[indice]
+            
+                # 🔍 DEBUG: stampa il comando inviato
+                print(f"DEBUG Dimmer {super().Get_Nome_Attuatore()}: "
+                    f"{val}% → arrotondato {percentuale_arrotondata}% "
+                    f"→ indice={indice} → codice=0x{valueDimmer.hex()}")
+            
+                stato_rele = await self.scsshield.interfaccia_send_COMANDO(
+                    super().Get_Address_A(), 
+                    super().Get_Address_PL(),  
+                    int.from_bytes(valueDimmer, "big"), 
+                    1
+                )
 
                 super().Set_Stato(int.from_bytes(valueDimmer, "big"))
                 super().Reset_Change_Stato()
                 await asyncio.sleep(0)
             except Exception as e:
-                print("EEEEEEEEEEEEEEEEEEEEEE")
-                print(e)
+                print(f"ERRORE Set_Dimmer_percent: {e}")
 
     def valmap(self, value, istart, istop, ostart, ostop):
         return ostart + (ostop - ostart) * ((value - istart) / (istop - istart))
