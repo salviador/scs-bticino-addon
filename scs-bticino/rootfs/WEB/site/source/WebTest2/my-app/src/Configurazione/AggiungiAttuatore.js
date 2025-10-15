@@ -22,9 +22,16 @@ function AggiungiAttuatore({handel_AGIUNGInew} ) {
 
 
     //change , NOME ATTUATORE [se esiste]
-    const handleChangeNOME_ATTUTATORE = (event) =>{
-        setinomeATTUATORE(event.target.value.toLowerCase());
-    }
+	const handleChangeNOME_ATTUTATORE = (event) => {
+		// ✅ Sostituisci spazi e caratteri speciali con underscore, forza lowercase
+		let valorePulito = event.target.value
+			.toLowerCase()                           // Tutto minuscolo
+			.replace(/\s+/g, '_')                    // Spazi → underscore
+			.replace(/[^a-z0-9_]/g, '_')             // Caratteri speciali → underscore
+			.replace(/_+/g, '_');                    // Underscore multipli → singolo
+		
+		setinomeATTUATORE(valorePulito);
+	}
     const handleChangeNOME_ATTUTATOREupdateDATABASE = (event) =>{
         //Qui ho il nome Attuatore Completo
     }
@@ -58,20 +65,29 @@ function AggiungiAttuatore({handel_AGIUNGInew} ) {
     }
 
     //CLICK AGGIUNGI
-    const handlClickAGGIUNGI = (event) =>{
-		
-		const nomeNormalizzato = nomeATTUATORE.trim(); // ✅ Solo trim, mantieni maiuscole
+	const handlClickAGGIUNGI = (event) => {
+		// ✅ Rimuovi underscore iniziali/finali
+		const nomeNormalizzato = nomeATTUATORE.trim().replace(/^_+|_+$/g, '');
 
-        if(optionsStateTipoAttuatori === "serrande_tapparelle"){
-            handel_AGIUNGInew({nome_attuatore: nomeNormalizzato, indirizzo_Ambiente : indirizzo_A,
-                indirizzo_PL : indirizzo_PL, tipo_attuatore : optionsStateTipoAttuatori, 
-                timer_salita : TIMER_UP, timer_discesa: TIMER_DOWN });
-        }else{
-            handel_AGIUNGInew({nome_attuatore: nomeNormalizzato, indirizzo_Ambiente : indirizzo_A,
-                indirizzo_PL : indirizzo_PL, tipo_attuatore : optionsStateTipoAttuatori});
-        }
-        setinomeATTUATORE("");
-    }
+		if(optionsStateTipoAttuatori === "serrande_tapparelle"){
+			handel_AGIUNGInew({
+				nome_attuatore: nomeNormalizzato, 
+				indirizzo_Ambiente: indirizzo_A,
+				indirizzo_PL: indirizzo_PL, 
+				tipo_attuatore: optionsStateTipoAttuatori, 
+				timer_salita: TIMER_UP, 
+				timer_discesa: TIMER_DOWN
+			});
+		} else {
+			handel_AGIUNGInew({
+				nome_attuatore: nomeNormalizzato, 
+				indirizzo_Ambiente: indirizzo_A,
+				indirizzo_PL: indirizzo_PL, 
+				tipo_attuatore: optionsStateTipoAttuatori
+			});
+		}
+		setinomeATTUATORE("");
+	}
 
 
 

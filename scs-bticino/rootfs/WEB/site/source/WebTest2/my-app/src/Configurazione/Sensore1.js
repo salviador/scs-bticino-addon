@@ -72,12 +72,22 @@ function Sensore1({ device, handle_CHANHE_NOME, handle_CHANHE_A, handle_CHANHE_P
         handle_TIMER_DOWN({nome_attuatore: device.nome_attuatore , timer_discesa : event.target.value});
     }
     //change , NOME ATTUATORE [se esiste]
-    const handleChangeNOME_ATTUTATORE = (event) =>{
-        setinomeATTUATORE(event.target.value.toLowerCase());
-    }
+	const handleChangeNOME_ATTUTATORE = (event) => {
+		// ✅ Sostituisci spazi e caratteri speciali con underscore, forza lowercase
+		let valorePulito = event.target.value
+			.toLowerCase()                           // Tutto minuscolo
+			.replace(/\s+/g, '_')                    // Spazi → underscore
+			.replace(/[^a-z0-9_]/g, '_')             // Caratteri speciali → underscore
+			.replace(/_+/g, '_');                    // Underscore multipli → singolo
+		
+		setinomeATTUATORE(valorePulito);
+	}
+
 
 	const handleChangeNOME_ATTUTATOREupdateDATABASE = (event) => {
-		const nuovoNomeNormalizzato = nomeATTUATORE.trim(); // ✅ Solo trim
+		// ✅ Rimuovi underscore iniziali/finali prima di salvare
+		const nuovoNomeNormalizzato = nomeATTUATORE.trim().replace(/^_+|_+$/g, '');
+		
 		handle_CHANHE_NOME({
 			nome_attuatore: device.nome_attuatore, 
 			nuovonome: nuovoNomeNormalizzato
