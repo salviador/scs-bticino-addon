@@ -53,18 +53,11 @@ q_nodered = None
 # MQTT DISCOVERY HELPERS
 # ============================================================================
 
-#def _slugify(value: str) -> str:
-#    """Converte nome dispositivo in slug valido (USATO OVUNQUE)"""
-#    s = re.sub(r"\s+", "_", value.strip())
-#    s = re.sub(r"[^a-zA-Z0-9_]", "", s)
-#    return s.lower()
-
 def _slugify(value: str) -> str:
-    """Converte nome dispositivo in slug valido - MANTIENE GLI SPAZI"""
-    s = value.strip()  # ✅ Rimuovi solo spazi all'inizio/fine
-    s = re.sub(r"[^a-zA-Z0-9\s_]", "", s)  # ✅ Rimuovi caratteri speciali MA mantieni spazi (\s)
-    return s.lower()  # ✅ Solo lowercase
-    
+    """Converte nome dispositivo in slug valido (USATO OVUNQUE)"""
+    s = re.sub(r"\s+", "_", value.strip())
+    s = re.sub(r"[^a-zA-Z0-9_]", "", s)
+    return s.lower()
 
 
 # ✅ ESPORTA la funzione per usarla in altri moduli
