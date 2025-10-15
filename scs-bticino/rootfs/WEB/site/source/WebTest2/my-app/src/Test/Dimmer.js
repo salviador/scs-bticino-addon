@@ -4,8 +4,6 @@ import { Container, Navbar, Nav, Button, Card, Row, Col } from 'react-bootstrap'
 
 import "./../App.css";
 
-
-
 function Dimmer({ device, valuedataRT, clientMWTT }) {
 
     //Stato
@@ -15,14 +13,15 @@ function Dimmer({ device, valuedataRT, clientMWTT }) {
     //Comando
     const [percentualeDimmer, set_percentualeDimmer] = useState(50);
 
-
     useEffect(() => {
         if (device.nome_attuatore === valuedataRT.nome_attuatore) {
             var m = (valuedataRT.topic).split("/");
             if (m[5] != null) {
+                // Status percentuale
                 setstatodimmerPercent(valuedataRT.stato + "%");
                 set_percentualeDimmer(valuedataRT.stato);
             } else {
+                // Status on/off
                 if ((valuedataRT.stato.localeCompare("on") == 0) || (valuedataRT.stato.localeCompare("1") == 0)) {
                     setstatodimmerONOFF("lamp_accesa.svg");
                 } else {
@@ -32,51 +31,42 @@ function Dimmer({ device, valuedataRT, clientMWTT }) {
         }
     }, [valuedataRT]);
 
-
-
     const update_percentuale = (event) => {
-        setstatodimmerPercent(valuedataRT.stato + "%");
         set_percentualeDimmer(event.target.value);
     };
+    
+    // ✅ CORRETTA: invia SOLO la percentuale, non "on" prima
     const update_mqtt_dimmer = () => {
-        if (clientMWTT) {
-            if (clientMWTT.connected) {
-                let topic = "/scsshield/device/" + device.nome_attuatore + "/dimmer";
-                clientMWTT.publish(topic, "on");
-
-                topic = "/scsshield/device/" + device.nome_attuatore + "/dimmer";
-                clientMWTT.publish(topic, percentualeDimmer);
-            }
+        if (clientMWTT && clientMWTT.connected) {
+            let topic = "/scsshield/device/" + device.nome_attuatore + "/dimmer";
+            
+            // ✅ Invia solo la percentuale come stringa
+            clientMWTT.publish(topic, String(percentualeDimmer));
+            
+            console.log(`📤 Dimmer MQTT: ${device.nome_attuatore} → ${percentualeDimmer}%`);
         }
     };
-
 
     const on_button = () => {
-        if (clientMWTT) {
-            if (clientMWTT.connected) {
-                let topic = "/scsshield/device/" + device.nome_attuatore + "/dimmer";
-                clientMWTT.publish(topic, "on")
-            }
+        if (clientMWTT && clientMWTT.connected) {
+            let topic = "/scsshield/device/" + device.nome_attuatore + "/dimmer";
+            clientMWTT.publish(topic, "on");
         }
     };
+    
     const t_button = () => {
-        if (clientMWTT) {
-            if (clientMWTT.connected) {
-                let topic = "/scsshield/device/" + device.nome_attuatore + "/dimmer";
-                clientMWTT.publish(topic, "t")
-            }
+        if (clientMWTT && clientMWTT.connected) {
+            let topic = "/scsshield/device/" + device.nome_attuatore + "/dimmer";
+            clientMWTT.publish(topic, "t");
         }
     };
+    
     const off_button = () => {
-        if (clientMWTT) {
-            if (clientMWTT.connected) {
-                let topic = "/scsshield/device/" + device.nome_attuatore + "/dimmer";
-                clientMWTT.publish(topic, "off")
-            }
+        if (clientMWTT && clientMWTT.connected) {
+            let topic = "/scsshield/device/" + device.nome_attuatore + "/dimmer";
+            clientMWTT.publish(topic, "off");
         }
     };
-
-
 
     return (
         <>
@@ -106,7 +96,7 @@ function Dimmer({ device, valuedataRT, clientMWTT }) {
                             <Row>
                                 <Col lg={4} >
                                     <Row>
-                                        <Col lg={8}><i>Stato Percentuale	</i></Col>
+                                        <Col lg={8}><i>Stato Percentuale</i></Col>
                                         <Col lg={8}><b>{statodimmerPercent}</b></Col>
                                     </Row>
                                 </Col>
@@ -114,7 +104,7 @@ function Dimmer({ device, valuedataRT, clientMWTT }) {
                                     <Row>
                                         <Col lg={8}><i>Stato</i></Col>
                                         <Col lg={8}>
-                                            <img data-icon="switch" src={"/site/image/" + statodimmerONOFF} style={{ width: "32px" }} />
+                                            <img data-icon="switch" src={"/site/image/" + statodimmerONOFF} style={{ width: "32px" }} alt="status" />
                                         </Col>
                                     </Row>
                                 </Col>
@@ -123,7 +113,15 @@ function Dimmer({ device, valuedataRT, clientMWTT }) {
                                         <Col lg={6}><i>Set Dimmer</i></Col>
                                         <Col lg={8}>
                                             <div className="col-xs-1">
-                                                <RangeSlider tooltip='off' value={percentualeDimmer} min="10" max="100" step="10" onChange={update_percentuale} onAfterChange={update_mqtt_dimmer} />
+                                                <RangeSlider 
+                                                    tooltip='off' 
+                                                    value={percentualeDimmer} 
+                                                    min="10" 
+                                                    max="100" 
+                                                    step="10" 
+                                                    onChange={update_percentuale} 
+                                                    onAfterChange={update_mqtt_dimmer} 
+                                                />
                                             </div>
                                         </Col>
                                     </Row>
@@ -147,6 +145,5 @@ function Dimmer({ device, valuedataRT, clientMWTT }) {
         </>
     );
 }
-
 
 export default Dimmer;
