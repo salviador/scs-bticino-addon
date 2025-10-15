@@ -25,17 +25,17 @@ class configurazione_database:
         self.db = TinyDB(DB_PATH)
 
     def CHECHK_ESISTE_ATTUATORE(self, nome_attuatore):
-        if nome_attuatore is not None:			
-            # ✅ Forza lowercase
-            nome_attuatore = nome_attuatore.lower()			
+        if nome_attuatore is not None:
+            # ✅ Confronta in lowercase
+            nome_attuatore_lower = nome_attuatore.lower()
             UUID = Query()
-            val = self.db.search(UUID.nome_attuatore == nome_attuatore)
+            # ✅ Cerca confrontando entrambi in lowercase
+            val = self.db.search(UUID.nome_attuatore.test(lambda x: x.lower() == nome_attuatore_lower))
             if len(val) > 0:
                 return True
         return False
 
     def AGGIUNGI_ATTUATORE(self, nome_attuatore, tipo_attuatore, indirizzo_Ambiente, indirizzo_PL):
-        nome_attuatore = nome_attuatore.lower() if nome_attuatore else None
         
         if not self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
             # Insert new

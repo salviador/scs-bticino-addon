@@ -101,7 +101,7 @@ def _build_topics(object_id: str):
 
 def _build_discovery_payload(nome_attuatore: str, tipo_attuatore: str):
     """Costruisce il payload discovery per Home Assistant"""
-    object_id = _slugify(nome_attuatore)
+    object_id = _slugify(nome_attuatore)  # ✅ Slug con underscore per topic
     unique_id = f"scs_{object_id}"
     t = (tipo_attuatore or "").lower()
     domain = DOMAIN_MAP.get(t, "switch")
@@ -116,7 +116,7 @@ def _build_discovery_payload(nome_attuatore: str, tipo_attuatore: str):
     }
 
     payload = {
-        "name": nome_attuatore,
+        "name": nome_attuatore,  # ✅ Nome ORIGINALE con spazi (es. "Serranda Studio")
         "unique_id": unique_id,
         "json_attributes_topic": topics["attrs"],
         "device": device,

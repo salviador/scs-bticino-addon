@@ -76,11 +76,13 @@ function Sensore1({ device, handle_CHANHE_NOME, handle_CHANHE_A, handle_CHANHE_P
         setinomeATTUATORE(event.target.value.toLowerCase());
     }
 
-    const handleChangeNOME_ATTUTATOREupdateDATABASE = (event) =>{
-		const nuovoNomeNormalizzato = nomeATTUATORE.toLowerCase().trim();
-        console.log("QUI CAMBIO IL NOME ATTUATORRE");
-        handle_CHANHE_NOME({nome_attuatore: device.nome_attuatore , nuovonome : nuovoNomeNormalizzato});
-    }
+	const handleChangeNOME_ATTUTATOREupdateDATABASE = (event) => {
+		const nuovoNomeNormalizzato = nomeATTUATORE.trim(); // ✅ Solo trim
+		handle_CHANHE_NOME({
+			nome_attuatore: device.nome_attuatore, 
+			nuovonome: nuovoNomeNormalizzato
+		});
+	}
 
 
     //ELIMINA BUTTON

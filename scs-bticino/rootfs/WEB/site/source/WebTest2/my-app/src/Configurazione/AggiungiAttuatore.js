@@ -60,7 +60,7 @@ function AggiungiAttuatore({handel_AGIUNGInew} ) {
     //CLICK AGGIUNGI
     const handlClickAGGIUNGI = (event) =>{
 		
-		const nomeNormalizzato = nomeATTUATORE.toLowerCase().trim();
+		const nomeNormalizzato = nomeATTUATORE.trim(); // ✅ Solo trim, mantieni maiuscole
 
         if(optionsStateTipoAttuatori === "serrande_tapparelle"){
             handel_AGIUNGInew({nome_attuatore: nomeNormalizzato, indirizzo_Ambiente : indirizzo_A,
