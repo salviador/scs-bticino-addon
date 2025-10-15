@@ -510,11 +510,11 @@ async def mqtt_action(jqueqe):
                                     await device.Toggle(lock_uartTX)
                                 else:
                                     # Tutto il resto è una percentuale                
-                                try:
-                                    brightness = int(message)
-                                    await device.Set_Dimmer_percent(brightness, lock_uartTX)
-                                except ValueError:
-                                    logger.warning(f"Dimmer {device_slug}: comando sconosciuto '{message}'")
+                                    try:
+                                        brightness = int(message)
+                                        await device.Set_Dimmer_percent(brightness, lock_uartTX)
+                                    except ValueError:
+                                        logger.warning(f"Dimmer {device_slug}: comando sconosciuto '{message}'")
                 
                 
                         elif tdevice.name == SCS.TYPE_INTERfACCIA.serrande_tapparelle.name:
