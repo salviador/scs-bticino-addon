@@ -48,9 +48,11 @@ function Termostati({ device, valuedataRT, clientMWTT }) {
         if (clientMWTT) {
             if (clientMWTT.connected) {
                 let topic = "/scsshield/device/" + device.nome_attuatore + "/set_modalita_termostato";
-                clientMWTT.publish(topic, 'estate')
+                clientMWTT.publish(topic, 'inverno')
             }
         }
+		
+		
     };
     const off_button = () => {
         if (clientMWTT) {
@@ -61,12 +63,15 @@ function Termostati({ device, valuedataRT, clientMWTT }) {
         }
     };
     const inverno_button = () => {
+
+		
         if (clientMWTT) {
             if (clientMWTT.connected) {
                 let topic = "/scsshield/device/" + device.nome_attuatore + "/set_modalita_termostato";
-                clientMWTT.publish(topic, 'inverno')
+                clientMWTT.publish(topic, 'estate')
             }
-        }
+        }		
+		
     };
 
 
