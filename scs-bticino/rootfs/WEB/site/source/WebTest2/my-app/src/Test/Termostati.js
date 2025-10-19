@@ -23,7 +23,14 @@ function Termostati({ device, valuedataRT, clientMWTT }) {
                     settemp_termostato(valuedataRT.stato);
                    // set_temp_setting_termostato(valuedataRT.stato);
                 } else if (m[4].localeCompare("modalita_termostato_impostata") == 0) {
-                    setmodalita_termostato(valuedataRT.stato);
+					let modalita = valuedataRT.stato;
+					if (modalita.toLowerCase() === "estate") {
+						setmodalita_termostato("inverno");
+					} else if (modalita.toLowerCase() === "inverno") {
+						setmodalita_termostato("estate");
+					} else {
+						setmodalita_termostato(modalita);
+					}					
                 }
             }
         }
@@ -48,10 +55,9 @@ function Termostati({ device, valuedataRT, clientMWTT }) {
         if (clientMWTT) {
             if (clientMWTT.connected) {
                 let topic = "/scsshield/device/" + device.nome_attuatore + "/set_modalita_termostato";
-                clientMWTT.publish(topic, 'inverno')
+                clientMWTT.publish(topic, 'estate')
             }
-        }
-		
+        }		
 		
     };
     const off_button = () => {
@@ -63,15 +69,12 @@ function Termostati({ device, valuedataRT, clientMWTT }) {
         }
     };
     const inverno_button = () => {
-
-		
         if (clientMWTT) {
             if (clientMWTT.connected) {
                 let topic = "/scsshield/device/" + device.nome_attuatore + "/set_modalita_termostato";
-                clientMWTT.publish(topic, 'estate')
+                clientMWTT.publish(topic, 'inverno')
             }
-        }		
-		
+        }
     };
 
 
