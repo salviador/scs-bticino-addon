@@ -35,11 +35,7 @@ else
     ls -la /dev/serial* || true
 fi
 
-# Verifica connessione MQTT
-bashio::log.info "Testing MQTT connection..."
-timeout 5 mosquitto_sub -h "${MQTT_HOST}" -p "${MQTT_PORT}" -t "test" -C 1 &>/dev/null && \
-    bashio::log.info "✓ MQTT broker reachable" || \
-    bashio::log.warning "✗ MQTT broker not reachable (might start later)"
+
 
 # Esporta variabili d'ambiente
 export MQTT_HOST="$MQTT_HOST"
