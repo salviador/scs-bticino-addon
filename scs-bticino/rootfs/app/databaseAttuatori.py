@@ -24,21 +24,38 @@ class configurazione_database:
             os.makedirs(db_dir)
         self.db = TinyDB(DB_PATH)
 
+    def _normalizza_nome_attuatore(self, nome_attuatore):
+        if isinstance(nome_attuatore, str):
+            nome_attuatore = nome_attuatore.strip().lower()
+            if nome_attuatore:
+                return nome_attuatore
+        return None
+
+    def _filtro_nome_attuatore(self, nome_attuatore):
+        nome_attuatore_normalizzato = self._normalizza_nome_attuatore(nome_attuatore)
+        if nome_attuatore_normalizzato is None:
+            return None
+
+        UUID = Query()
+        return UUID.nome_attuatore.test(
+            lambda x: isinstance(x, str) and x.strip().lower() == nome_attuatore_normalizzato
+        )
+
     def CHECHK_ESISTE_ATTUATORE(self, nome_attuatore):
-        if nome_attuatore is not None:
-            # ✅ Confronta in lowercase
-            nome_attuatore_lower = nome_attuatore.lower()
-            UUID = Query()
-            # ✅ Cerca confrontando entrambi in lowercase
-            val = self.db.search(UUID.nome_attuatore.test(lambda x: x.lower() == nome_attuatore_lower))
-            if len(val) > 0:
-                return True
-        return False
+        filtro = self._filtro_nome_attuatore(nome_attuatore)
+        if filtro is None:
+            return False
+
+        val = self.db.search(filtro)
+        return len(val) > 0
 
     def AGGIUNGI_ATTUATORE(self, nome_attuatore, tipo_attuatore, indirizzo_Ambiente, indirizzo_PL):
-        
+        nome_attuatore = self._normalizza_nome_attuatore(nome_attuatore)
+        if nome_attuatore is None:
+            return False
+
+        filtro = self._filtro_nome_attuatore(nome_attuatore)
         if not self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
-            # Insert new
             self.db.insert({
                 'nome_attuatore': nome_attuatore,
                 'tipo_attuatore': tipo_attuatore,
@@ -46,104 +63,96 @@ class configurazione_database:
                 'indirizzo_PL': indirizzo_PL
             })
         else:
-            # Update exist
-            UUID = Query()
             self.db.update({
+                'nome_attuatore': nome_attuatore,
                 'tipo_attuatore': tipo_attuatore,
                 'indirizzo_Ambiente': indirizzo_Ambiente,
                 'indirizzo_PL': indirizzo_PL
-            }, UUID.nome_attuatore == nome_attuatore)
+            }, filtro)
+
+        return True
 
     def AGGIORNA_ATTUATORE_xNome(self, nome_attuatore, nuovo_attuatore):
-        # ✅ Forza lowercase
-        nome_attuatore = nome_attuatore.lower() if nome_attuatore else None
-        nuovo_attuatore = nuovo_attuatore.lower() if nuovo_attuatore else None
-    
-        if self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
-            if not self.CHECHK_ESISTE_ATTUATORE(nuovo_attuatore):
-                UUID = Query()
-                self.db.update({'nome_attuatore': nuovo_attuatore},
-                               UUID.nome_attuatore == nome_attuatore)
+        filtro = self._filtro_nome_attuatore(nome_attuatore)
+        nuovo_attuatore = self._normalizza_nome_attuatore(nuovo_attuatore)
+
+        if filtro is not None and nuovo_attuatore is not None:
+            if self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
+                if not self.CHECHK_ESISTE_ATTUATORE(nuovo_attuatore):
+                    self.db.update({'nome_attuatore': nuovo_attuatore}, filtro)
 
     def AGGIORNA_ATTUATORE_xTipo(self, nome_attuatore, tipo_attuatore):
-        if self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
-            UUID = Query()
-            self.db.update({'tipo_attuatore': tipo_attuatore},
-                           UUID.nome_attuatore == nome_attuatore)
+        filtro = self._filtro_nome_attuatore(nome_attuatore)
+        if filtro is not None and self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
+            self.db.update({'tipo_attuatore': tipo_attuatore}, filtro)
 
     def AGGIORNA_ATTUATORE_xindirizzo_Ambiente(self, nome_attuatore, indirizzo_Ambiente):
-        if self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
-            UUID = Query()
-            self.db.update({'indirizzo_Ambiente': indirizzo_Ambiente},
-                           UUID.nome_attuatore == nome_attuatore)
+        filtro = self._filtro_nome_attuatore(nome_attuatore)
+        if filtro is not None and self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
+            self.db.update({'indirizzo_Ambiente': indirizzo_Ambiente}, filtro)
 
     def AGGIORNA_ATTUATORE_xindirizzo_PL(self, nome_attuatore, indirizzo_PL):
-        if self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
-            UUID = Query()
-            self.db.update({'indirizzo_PL': indirizzo_PL},
-                           UUID.nome_attuatore == nome_attuatore)
+        filtro = self._filtro_nome_attuatore(nome_attuatore)
+        if filtro is not None and self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
+            self.db.update({'indirizzo_PL': indirizzo_PL}, filtro)
 
     def AGGIORNA_TIMER_SERRANDETAPPARELLE_UP(self, nome_attuatore, timer_salita):
-        if self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
-            UUID = Query()
-            self.db.update({'timer_salita': timer_salita},
-                           UUID.nome_attuatore == nome_attuatore)
+        filtro = self._filtro_nome_attuatore(nome_attuatore)
+        if filtro is not None and self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
+            self.db.update({'timer_salita': timer_salita}, filtro)
 
     def AGGIORNA_TIMER_SERRANDETAPPARELLE_DW(self, nome_attuatore, timer_discesa):
-        if self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
-            UUID = Query()
-            self.db.update({'timer_discesa': timer_discesa},
-                           UUID.nome_attuatore == nome_attuatore)
+        filtro = self._filtro_nome_attuatore(nome_attuatore)
+        if filtro is not None and self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
+            self.db.update({'timer_discesa': timer_discesa}, filtro)
 
     def AGGIORNA_ATTUATORE_x_AWS_ENDPOINT(self, nome_attuatore, nome_endpoint):
-        if self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
-            UUID = Query()
-            self.db.update({'nome_endpoint': nome_endpoint},
-                           UUID.nome_attuatore == nome_attuatore)
+        filtro = self._filtro_nome_attuatore(nome_attuatore)
+        if filtro is not None and self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
+            self.db.update({'nome_endpoint': nome_endpoint}, filtro)
 
     def RICHIESTA_ATTUATORE(self, nome_attuatore):
-        # ✅ Forza lowercase
-        nome_attuatore = nome_attuatore.lower() if nome_attuatore else None
-        if self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
-            nodo = Query()
-            val = self.db.search(nodo.nome_attuatore == nome_attuatore)
-            return val[0]
+        filtro = self._filtro_nome_attuatore(nome_attuatore)
+        if filtro is not None and self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
+            val = self.db.search(filtro)
+            if len(val) > 0:
+                return val[0]
         return None
 
     def RICHIESTA_TUTTI_ATTUATORI(self):
         query = self.db.all()
 
-        # ---------------------------------------------------
-        all_att = list()
-        # Sort "nome_attuatore" in ordine alfanumerico
-        alldev_nome_attuatore = [q['nome_attuatore'] for q in query]
-        alldev_nome_attuatore.sort()
+        query_validi = [
+            q for q in query
+            if q.get('nome_attuatore') is not None and str(q.get('nome_attuatore')).strip() != ''
+        ]
 
-        # crea una nuova lista di device in ordine alfanumerico
-        for nome_att in alldev_nome_attuatore:
-            for q in query:
-                if q['nome_attuatore'] == nome_att:
-                    all_att.append(q)
+        all_att = sorted(
+            query_validi,
+            key=lambda q: str(q.get('nome_attuatore', '')).lower()
+        )
 
-        # Ordina per tipo
         ordine_x_tipo = [
             'on_off', 'dimmer', 'serrande_tapparelle', 'sensori_temperatura',
             'termostati', 'serrature', 'campanello_porta', 'gruppi'
         ]
+
         all_attuatori = []
         for ord_tipo in ordine_x_tipo:
             for q in all_att:
-                if ord_tipo == q['tipo_attuatore']:
+                if q.get('tipo_attuatore') == ord_tipo:
                     all_attuatori.append(q)
+
+        for q in all_att:
+            if q.get('tipo_attuatore') not in ordine_x_tipo:
+                all_attuatori.append(q)
 
         return all_attuatori
 
     def RIMUOVE_ATTUATORE(self, nome_attuatore):
-        # ✅ Forza lowercase
-        nome_attuatore = nome_attuatore.lower() if nome_attuatore else None
-        if self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
-            UUID = Query()
-            self.db.remove(UUID.nome_attuatore == nome_attuatore)
+        filtro = self._filtro_nome_attuatore(nome_attuatore)
+        if filtro is not None and self.CHECHK_ESISTE_ATTUATORE(nome_attuatore):
+            self.db.remove(filtro)
 
     def myprint(self):
         # self.db.purge()

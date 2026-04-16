@@ -19,6 +19,35 @@ function Configurazioni() {
     const handleShow = () => setShow(true);
     const [messaggio_da_visualizzare, setmessaggio_da_visualizzare] = useState('');
 
+    const normalizeNomeAttuatore = (nome_attuatore) => {
+        if (typeof nome_attuatore !== 'string') {
+            return '';
+        }
+        return nome_attuatore.trim().toLowerCase();
+    }
+
+    const findAttuatore = (nome_attuatore) => {
+        const nomeNormalizzato = normalizeNomeAttuatore(nome_attuatore);
+        return lista_dispositivi.find(
+            device => normalizeNomeAttuatore(device.nome_attuatore) === nomeNormalizzato
+        );
+    }
+
+    const updateAttuatoreLocale = (nome_attuatore, updater) => {
+        const nomeNormalizzato = normalizeNomeAttuatore(nome_attuatore);
+        setListaDispositivi(lista_corrente =>
+            lista_corrente.map(device => {
+                if (normalizeNomeAttuatore(device.nome_attuatore) !== nomeNormalizzato) {
+                    return device;
+                }
+
+                const updatedDevice = { ...device };
+                updater(updatedDevice);
+                return updatedDevice;
+            })
+        );
+    }
+
 
     useEffect(() => {
         setListaDispositivi([]);
@@ -54,67 +83,89 @@ function Configurazioni() {
         //value.nome_attuatore
         //value.nuovonome
 
-        var datas = { 'nome_attuatore': value.nome_attuatore, 'nuovo_nome': value.nuovonome };
+        const nomeAttuatore = normalizeNomeAttuatore(value.nome_attuatore);
+        const nuovoNome = normalizeNomeAttuatore(value.nuovonome);
+        if (nuovoNome === '') {
+            setmessaggio_da_visualizzare("Il nome del nuovo Attuatore non puÃ² essere vuoto");
+            handleShow();
+            return;
+        }
+
+        var attuatoreEsistente = findAttuatore(nuovoNome);
+        if (typeof attuatoreEsistente !== "undefined" &&
+            normalizeNomeAttuatore(attuatoreEsistente.nome_attuatore) !== nomeAttuatore) {
+            setmessaggio_da_visualizzare("Esiste giÃ  il nome dell'attuatore nel database");
+            handleShow();
+            return;
+        }
+
+        var datas = { 'nome_attuatore': nomeAttuatore, 'nuovo_nome': nuovoNome };
         post_request_update_database('AGGIORNA_NOME_ATTUATORE.json', datas);
 
-        //Aggiorna Lista nel Array HOOK
-        var attuatore = lista_dispositivi.find(device => device.nome_attuatore === value.nome_attuatore);
-        attuatore.nome_attuatore = value.nuovonome;
+        updateAttuatoreLocale(nomeAttuatore, attuatore => {
+            attuatore.nome_attuatore = nuovoNome;
+        });
     }
 
     //AGGIORNA NEL DATABASE L'INDIRIZZO AMBIENTE e nel HOOK
     const handle_CHANHE_A = (value) => {
-        var datas = { 'nome_attuatore': value.nome_attuatore, 'indirizzo_Ambiente': value.indirizzo_Ambiente };
+        const nomeAttuatore = normalizeNomeAttuatore(value.nome_attuatore);
+        var datas = { 'nome_attuatore': nomeAttuatore, 'indirizzo_Ambiente': value.indirizzo_Ambiente };
         post_request_update_database('AGGIORNA_INDIRIZZO_A.json', datas);
 
-        //Aggiorna Lista nel Array HOOK
-        var attuatore = lista_dispositivi.find(device => device.nome_attuatore === value.nome_attuatore);
-        attuatore.indirizzo_Ambiente = value.indirizzo_Ambiente;
+        updateAttuatoreLocale(nomeAttuatore, attuatore => {
+            attuatore.indirizzo_Ambiente = value.indirizzo_Ambiente;
+        });
     }
     //AGGIORNA NEL DATABASE L'INDIRIZZO PL e nel HOOK
     const handle_CHANHE_PL = (value) => {
-        var datas = { 'nome_attuatore': value.nome_attuatore, 'indirizzo_PL': value.indirizzo_PL };
+        const nomeAttuatore = normalizeNomeAttuatore(value.nome_attuatore);
+        var datas = { 'nome_attuatore': nomeAttuatore, 'indirizzo_PL': value.indirizzo_PL };
         post_request_update_database('AGGIORNA_INDIRIZZO_PL.json', datas);
 
-        //Aggiorna Lista nel Array HOOK
-        var attuatore = lista_dispositivi.find(device => device.nome_attuatore === value.nome_attuatore);
-        attuatore.indirizzo_PL = value.indirizzo_PL;
+        updateAttuatoreLocale(nomeAttuatore, attuatore => {
+            attuatore.indirizzo_PL = value.indirizzo_PL;
+        });
     }
     //AGGIORNA NEL DATABASE IL TIPO ATTUATORE e nel HOOK
     const handle_TIPO = (value) => {
-        var datas = { 'nome_attuatore': value.nome_attuatore, 'tipo_attuatore': value.tipo_attuatore };
+        const nomeAttuatore = normalizeNomeAttuatore(value.nome_attuatore);
+        var datas = { 'nome_attuatore': nomeAttuatore, 'tipo_attuatore': value.tipo_attuatore };
         post_request_update_database('AGGIORNA_TIPO_ATTUATORE.json', datas);
 
-        //Aggiorna Lista nel Array HOOK
-        var attuatore = lista_dispositivi.find(device => device.nome_attuatore === value.nome_attuatore);
-        attuatore.tipo_attuatore = value.tipo_attuatore;
+        updateAttuatoreLocale(nomeAttuatore, attuatore => {
+            attuatore.tipo_attuatore = value.tipo_attuatore;
+        });
     }
     //AGGIORNA NEL DATABASE TIMER SALITA e nel HOOK
     const handle_TIMER_UP = (value) => {
-        var datas = { 'nome_attuatore': value.nome_attuatore, 'timer_salita': value.timer_salita };
+        const nomeAttuatore = normalizeNomeAttuatore(value.nome_attuatore);
+        var datas = { 'nome_attuatore': nomeAttuatore, 'timer_salita': value.timer_salita };
         post_request_update_database('AGGIORNA_TIMER_SERRANDETAPPARELLE.json', datas);
 
-        //Aggiorna Lista nel Array HOOK
-        var attuatore = lista_dispositivi.find(device => device.nome_attuatore === value.nome_attuatore);
-        attuatore.timer_salita = value.timer_salita;
+        updateAttuatoreLocale(nomeAttuatore, attuatore => {
+            attuatore.timer_salita = value.timer_salita;
+        });
     }
     //AGGIORNA NEL DATABASE TIMER DISCESA e nel HOOK
     const handle_TIMER_DOWN = (value) => {
-        var datas = { 'nome_attuatore': value.nome_attuatore, 'timer_discesa': value.timer_discesa };
+        const nomeAttuatore = normalizeNomeAttuatore(value.nome_attuatore);
+        var datas = { 'nome_attuatore': nomeAttuatore, 'timer_discesa': value.timer_discesa };
         post_request_update_database('AGGIORNA_TIMER_SERRANDETAPPARELLE.json', datas);
 
-        //Aggiorna Lista nel Array HOOK
-        var attuatore = lista_dispositivi.find(device => device.nome_attuatore === value.nome_attuatore);
-        attuatore.timer_discesa = value.timer_discesa;
+        updateAttuatoreLocale(nomeAttuatore, attuatore => {
+            attuatore.timer_discesa = value.timer_discesa;
+        });
     }
     //AGGIORNA NEL DATABASE ***ELIMINA*** e nel HOOK
     const handle_ELIMINA = (value) => {
-        var datas = { 'nome_attuatore': value.nome_attuatore };
+        const nomeAttuatore = normalizeNomeAttuatore(value.nome_attuatore);
+        var datas = { 'nome_attuatore': nomeAttuatore };
         post_request_update_database('RIMUOVI_ATTUATORE.json', datas);
 
         //Aggiorna Lista nel Array HOOK
         var myArray = lista_dispositivi.filter(function (device) {
-            return device.nome_attuatore !== value.nome_attuatore;
+            return normalizeNomeAttuatore(device.nome_attuatore) !== nomeAttuatore;
         });
         setListaDispositivi(myArray);
     }
@@ -122,20 +173,22 @@ function Configurazioni() {
     //-----------------------------------------------
     //AGGIUNGI NUOVO ATTUATORE  
     const handel_AGIUNGInew = (value) => {
-        if (value.nome_attuatore === '') {
+        const nomeAttuatore = normalizeNomeAttuatore(value.nome_attuatore);
+        if (nomeAttuatore === '') {
             setmessaggio_da_visualizzare("Il nome del nuovo Attuatore non può essere vuoto");
             handleShow();
             //Pop up
         } else {
+            const nuovoAttuatore = { ...value, nome_attuatore: nomeAttuatore };
             //Controlla se esiste in "lista_dispositivi"
-            var attuatore = lista_dispositivi.find(device => device.nome_attuatore === value.nome_attuatore);
+            var attuatore = findAttuatore(nomeAttuatore);
             if (typeof attuatore === "undefined") {
                 //Ok inserisci nel database!!!
 
-                post_request_update_database('AGGIUNGI_ATTUATORE.json', value);
+                post_request_update_database('AGGIUNGI_ATTUATORE.json', nuovoAttuatore);
 
                 //Aggiungi in lista_dispositivi
-                setListaDispositivi(lista_dispositivi => [...lista_dispositivi, value]);
+                setListaDispositivi(lista_dispositivi => [...lista_dispositivi, nuovoAttuatore]);
             } else {
                 //ERROE c'è già --> "POPUP"
                 setmessaggio_da_visualizzare("Esiste già il nome dell'attuatore nel database");

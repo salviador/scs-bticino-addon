@@ -530,17 +530,24 @@ class AGGIUNGI_ATTUATORE_JOSN(tornado.web.RequestHandler):
         global q
         data = json.loads(self.request.body)
         if ("nome_attuatore" in data and "tipo_attuatore" in data and "indirizzo_Ambiente" in data and "indirizzo_PL" in data):
-            dbm.AGGIUNGI_ATTUATORE(
+            added = dbm.AGGIUNGI_ATTUATORE(
                 data['nome_attuatore'],
                 data['tipo_attuatore'].lower(),
                 data['indirizzo_Ambiente'],
                 data['indirizzo_PL']
             )
+            if not added:
+                return
+
+            attuatore = dbm.RICHIESTA_ATTUATORE(data['nome_attuatore'])
+            if attuatore is None:
+                return
+
             # Pubblica discovery
-            publish_discovery(data['nome_attuatore'], data['tipo_attuatore'])
+            publish_discovery(attuatore['nome_attuatore'], attuatore['tipo_attuatore'])
             if ("timer_salita" in data and "timer_discesa" in data):
-                dbm.AGGIORNA_TIMER_SERRANDETAPPARELLE_UP(data['nome_attuatore'], data['timer_salita'])
-                dbm.AGGIORNA_TIMER_SERRANDETAPPARELLE_DW(data['nome_attuatore'], data['timer_discesa'])
+                dbm.AGGIORNA_TIMER_SERRANDETAPPARELLE_UP(attuatore['nome_attuatore'], data['timer_salita'])
+                dbm.AGGIORNA_TIMER_SERRANDETAPPARELLE_DW(attuatore['nome_attuatore'], data['timer_discesa'])
             await q.put(1)
 
 class AGGIORNA_TIMER_SERRANDETAPPARELLE_JOSN(tornado.web.RequestHandler):
