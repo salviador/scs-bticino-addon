@@ -1,6 +1,6 @@
 # Il Supervisor inietterà l'immagine corretta (es. ghcr.io/home-assistant/aarch64-addon-base)
-ARG BUILD_FROM
-FROM $BUILD_FROM
+ARG BUILD_FROM=ghcr.io/home-assistant/base:latest
+FROM ${BUILD_FROM}
 
 # Pacchetti utili (bashio e s6 sono già inclusi nell'addon-base)
 RUN apk add --no-cache \
