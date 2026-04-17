@@ -262,6 +262,110 @@ asyncio.set_event_loop(loop)
 lock_uartTX = asyncio.Lock()
 lock_refresh_Database = asyncio.Lock()
 
+ENERGY_TOTALS_PATH = '/data/scs_energy_totals.json'
+
+
+class EnergyAccumulator:
+    """Totalizza l'energia in kWh a partire dalla potenza istantanea in W."""
+
+    def __init__(self, path):
+        self.path = path
+        self.data = {}
+        self._load()
+
+    def _load(self):
+        self.data = {}
+        if os.path.isfile(self.path):
+            try:
+                with open(self.path, 'r', encoding='utf-8') as fp:
+                    loaded = json.load(fp)
+                if isinstance(loaded, dict):
+                    self.data = loaded
+            except Exception as e:
+                logger.error(f"Failed to load energy totals: {e}")
+
+        # Dopo un riavvio ripartiamo da "adesso" per non integrare il downtime.
+        now_ts = time.time()
+        for slug, entry in list(self.data.items()):
+            if not isinstance(entry, dict):
+                self.data[slug] = {
+                    "energy_kwh": 0.0,
+                    "power_w": 0.0,
+                    "last_update_ts": None,
+                }
+                continue
+
+            entry["energy_kwh"] = float(entry.get("energy_kwh", 0.0) or 0.0)
+            entry["power_w"] = float(entry.get("power_w", 0.0) or 0.0)
+            if entry.get("last_update_ts") is not None:
+                entry["last_update_ts"] = now_ts
+
+    def _save(self):
+        try:
+            os.makedirs(os.path.dirname(self.path), exist_ok=True)
+            with open(self.path, 'w', encoding='utf-8') as fp:
+                json.dump(self.data, fp, indent=2, sort_keys=True)
+        except Exception as e:
+            logger.error(f"Failed to save energy totals: {e}")
+
+    def ensure_device(self, slug):
+        entry = self.data.get(slug)
+        if not isinstance(entry, dict):
+            entry = {
+                "energy_kwh": 0.0,
+                "power_w": 0.0,
+                "last_update_ts": None,
+            }
+            self.data[slug] = entry
+
+        entry["energy_kwh"] = float(entry.get("energy_kwh", 0.0) or 0.0)
+        entry["power_w"] = float(entry.get("power_w", 0.0) or 0.0)
+        return entry
+
+    def register_device(self, slug):
+        self.ensure_device(slug)
+
+    def get_energy_kwh(self, slug):
+        entry = self.ensure_device(slug)
+        return float(entry.get("energy_kwh", 0.0) or 0.0)
+
+    def _integrate_until(self, entry, now_ts):
+        last_update_ts = entry.get("last_update_ts")
+        power_w = max(float(entry.get("power_w", 0.0) or 0.0), 0.0)
+
+        if last_update_ts is not None and now_ts > last_update_ts and power_w > 0:
+            delta_kwh = power_w * (now_ts - last_update_ts) / 3600000.0
+            entry["energy_kwh"] = float(entry.get("energy_kwh", 0.0) or 0.0) + delta_kwh
+
+        entry["last_update_ts"] = now_ts
+
+    def update_power(self, slug, power_w, now_ts=None):
+        now_ts = now_ts or time.time()
+        entry = self.ensure_device(slug)
+        self._integrate_until(entry, now_ts)
+        entry["power_w"] = max(float(power_w), 0.0)
+        self._save()
+        return self.get_energy_kwh(slug)
+
+    def tick(self, now_ts=None):
+        now_ts = now_ts or time.time()
+        changed_slugs = []
+
+        for slug, entry in self.data.items():
+            energy_before = round(float(entry.get("energy_kwh", 0.0) or 0.0), 6)
+            self._integrate_until(entry, now_ts)
+            energy_after = round(float(entry.get("energy_kwh", 0.0) or 0.0), 6)
+            if energy_after != energy_before:
+                changed_slugs.append(slug)
+
+        if changed_slugs:
+            self._save()
+
+        return changed_slugs
+
+
+energy_accumulator = EnergyAccumulator(ENERGY_TOTALS_PATH)
+
 
 
 
@@ -317,6 +421,13 @@ async def publish_all_discovery():
             nome = device['nome_attuatore']
             tipo = device['tipo_attuatore']
             publish_discovery(nome, tipo)
+            if tipo == 'sensori_consumo':
+                device_slug = webapp.get_device_slug(nome)
+                energy_accumulator.register_device(device_slug)
+                await scsmqtt.post_to_MQTT(
+                    f"/scsshield/device/{device_slug}/energy",
+                    format(energy_accumulator.get_energy_kwh(device_slug), '.6f')
+                )
             logger.info(f"✓ Published discovery for: {nome} ({tipo})")
             await asyncio.sleep(0.1)  # rate limiting
         except Exception as e:
@@ -394,6 +505,7 @@ def popula_device():
             sensore_consumo.Set_Address(int(item['indirizzo_Ambiente']), int(item['indirizzo_PL']))
             sensore_consumo.Set_Nome_Attuatore(item['nome_attuatore'])
             shield.addDevice(sensore_consumo)
+            energy_accumulator.register_device(webapp.get_device_slug(item['nome_attuatore']))
 
         elif (item['tipo_attuatore'] == "gruppi"):
             gruppi = SCS.Gruppi(shield)
@@ -445,6 +557,7 @@ async def tsk_refresh_database(jqueqe):
                         await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/status")
                     elif(tipoAtt == 'sensori_consumo'):
                         await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/status")
+                        await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/energy")
                     elif(tipoAtt == 'termostati'):
                         await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/status")
                         await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/temperatura_termostato_impostata")
@@ -599,6 +712,21 @@ async def mqtt_action(jqueqe):
         await asyncio.sleep(0)
 
 
+async def tsk_publish_energy_totals():
+    """Aggiorna periodicamente l'energia cumulata per i sensori di consumo."""
+    while True:
+        try:
+            await asyncio.sleep(60)
+            for device_slug in energy_accumulator.tick():
+                await scsmqtt.post_to_MQTT(
+                    f"/scsshield/device/{device_slug}/energy",
+                    format(energy_accumulator.get_energy_kwh(device_slug), '.6f')
+                )
+        except Exception as e:
+            logger.error("Error in tsk_publish_energy_totals")
+            logger.error(e)
+
+
 async def deviceReceiver_from_SCSbus(jqueqe):
     """Riceve gli stati dei device dal BUS SCS e li invia a MQTT"""
     while True:
@@ -696,6 +824,11 @@ async def deviceReceiver_from_SCSbus(jqueqe):
                         potenza = (int.from_bytes(trama[7], "big") << 8) + int.from_bytes(trama[8], "big")
                         device.Set_Stato(potenza)
                         await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/status", str(potenza))
+                        energy_accumulator.update_power(device_slug, potenza)
+                        await scsmqtt.post_to_MQTT(
+                            f"/scsshield/device/{device_slug}/energy",
+                            format(energy_accumulator.get_energy_kwh(device_slug), '.6f')
+                        )
 
                     # Campanello
                     elif len(trama) == 7 and trama[1] == b'\x91' and trama[3] == b'\x60' and trama[4] == b'\x08' and type.name == SCS.TYPE_INTERfACCIA.campanello_porta.name:
@@ -816,6 +949,7 @@ async def main():
     #tasks.append(loop.create_task( scsmqtt.main(queue_mqtt_action.async_q)        ))
 
     tasks.append(loop.create_task( mqtt_action(queue_mqtt_action.async_q)           ))
+    tasks.append(loop.create_task( tsk_publish_energy_totals()                      ))
 
     #tasks.append(loop.create_task( Node_Red_flow(queue_node_red_action.async_q)           ))
 

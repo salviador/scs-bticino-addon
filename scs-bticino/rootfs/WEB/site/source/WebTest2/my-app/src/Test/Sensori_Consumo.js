@@ -4,11 +4,16 @@ import { Container, Card, Row, Col } from 'react-bootstrap';
 import "./../App.css";
 
 function SensoriConsumo({ device, valuedataRT }) {
-    const [statoSensore, setStatoSensore] = useState("-- W");
+    const [potenzaSensore, setPotenzaSensore] = useState("-- W");
+    const [energiaSensore, setEnergiaSensore] = useState("-- kWh");
 
     useEffect(() => {
         if (device.nome_attuatore === valuedataRT.nome_attuatore) {
-            setStatoSensore(valuedataRT.stato + " W");
+            if (valuedataRT.topic && valuedataRT.topic.endsWith("/energy")) {
+                setEnergiaSensore(valuedataRT.stato + " kWh");
+            } else {
+                setPotenzaSensore(valuedataRT.stato + " W");
+            }
         }
     }, [device.nome_attuatore, valuedataRT]);
 
@@ -41,7 +46,11 @@ function SensoriConsumo({ device, valuedataRT }) {
                                 <Col lg={8} style={{ alignSelf: "center" }}>
                                     <Row>
                                         <Col lg={8}><i>Potenza</i></Col>
-                                        <Col lg={8}><b>{statoSensore}</b></Col>
+                                        <Col lg={8}><b>{potenzaSensore}</b></Col>
+                                    </Row>
+                                    <Row>
+                                        <Col lg={8}><i>Energia totale</i></Col>
+                                        <Col lg={8}><b>{energiaSensore}</b></Col>
                                     </Row>
                                 </Col>
                             </Row>

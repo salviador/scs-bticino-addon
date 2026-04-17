@@ -245,7 +245,34 @@ def _build_discovery_payload(nome_attuatore: str, tipo_attuatore: str):
 
     return domain, object_id, payload
 
-            
+def _build_energy_total_discovery_payload(nome_attuatore: str):
+    """Costruisce il payload discovery per l'energia cumulata in kWh."""
+    object_id = _slugify(nome_attuatore)
+    energy_object_id = f"{object_id}_energia_totale"
+
+    device = {
+        "identifiers": ["scs_bticino_bridge"],
+        "name": "SCS BTicino Bridge",
+        "manufacturer": "Custom",
+        "model": "SCS â†’ MQTT Bridge",
+    }
+
+    payload = {
+        "name": f"{nome_attuatore} energia totale",
+        "unique_id": f"scs_{energy_object_id}",
+        "state_topic": f"/scsshield/device/{object_id}/energy",
+        "device_class": "energy",
+        "unit_of_measurement": "kWh",
+        "state_class": "total_increasing",
+        "value_template": "{{ value | float(0) | round(6) }}",
+        "suggested_display_precision": 3,
+        "icon": "mdi:counter",
+        "device": device,
+    }
+
+    return "sensor", energy_object_id, payload
+
+
 def publish_discovery(nome_attuatore: str, tipo_attuatore: str, retain=True):
     """Pubblica discovery MQTT per Home Assistant"""
     res = _build_discovery_payload(nome_attuatore, tipo_attuatore)
@@ -270,6 +297,21 @@ def publish_discovery(nome_attuatore: str, tipo_attuatore: str, retain=True):
             retain=retain,
         )
         logger.info(f"✓ Published discovery: {topic}")
+        if (tipo_attuatore or "").lower() == "sensori_consumo":
+            energy_domain, energy_object_id, energy_payload = _build_energy_total_discovery_payload(nome_attuatore)
+            energy_topic = f"homeassistant/{energy_domain}/{energy_object_id}/config"
+            publish.single(
+                energy_topic,
+                payload=json.dumps(energy_payload),
+                hostname=mqtt_host,
+                port=mqtt_port,
+                auth=auth_dict,
+                retain=retain,
+            )
+            logger.info(f"âœ“ Published discovery: {energy_topic}")
+
+            logger.info(f"âœ… Unpublished discovery: {energy_topic}")
+
         return topic
     except Exception as e:
         logger.error(f"✗ Discovery publish failed for {nome_attuatore}: {e}")

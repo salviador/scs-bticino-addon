@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import Dispositivi from './Dispositivi';
 import mqtt from "mqtt";
 import "./../App.css";
@@ -16,9 +16,9 @@ function Test() {
 
     const loadDevices = async () => {
       const data = await fetch(ADDRESS_SERVER + "GetConfigurazionereact.json").then(r => r.json());
-      console.log("✅ Dispositivi caricati:", data);
+      console.log("âœ… Dispositivi caricati:", data);
       setListaDispositivi(data);
-      return data; // ✅ Ritorna i dati
+      return data; // âœ… Ritorna i dati
     };
 
     const connectMqtt = async (devices) => {
@@ -40,38 +40,38 @@ function Test() {
       setMqttClient(client);
 
       client.on("connect", () => {
-        console.log("✅ MQTT connesso:", url);
+        console.log("âœ… MQTT connesso:", url);
 
-        // ✅ Subscribe ai topic
+        // âœ… Subscribe ai topic
         client.subscribe("/scsshield/device/+/status", (err) => {
           if (err) console.error("Errore subscribe status:", err);
-          else console.log("✅ Subscribed to /scsshield/device/+/status");
+          else console.log("âœ… Subscribed to /scsshield/device/+/status");
         });
         
         client.subscribe("/scsshield/device/+/status/percentuale", (err) => {
           if (err) console.error("Errore subscribe percentuale:", err);
-          else console.log("✅ Subscribed to /scsshield/device/+/status/percentuale");
+          else console.log("âœ… Subscribed to /scsshield/device/+/status/percentuale");
         });
         
         client.subscribe("/scsshield/device/+/modalita_termostato_impostata", (err) => {
           if (err) console.error("Errore subscribe modalita:", err);
-          else console.log("✅ Subscribed to /scsshield/device/+/modalita_termostato_impostata");
+          else console.log("âœ… Subscribed to /scsshield/device/+/modalita_termostato_impostata");
         });
         
         client.subscribe("/scsshield/device/+/temperatura_termostato_impostata", (err) => {
           if (err) console.error("Errore subscribe temperatura:", err);
-          else console.log("✅ Subscribed to /scsshield/device/+/temperatura_termostato_impostata");
+          else console.log("âœ… Subscribed to /scsshield/device/+/temperatura_termostato_impostata");
         });
       });
 
       client.on("error", (err) => {
-        console.error("❌ MQTT ERROR:", err?.message || err);
+        console.error("âŒ MQTT ERROR:", err?.message || err);
         try { client.end(); } catch {}
       });
 
-      // ✅ Handler messaggi - usa 'devices' passato come parametro
+      // âœ… Handler messaggi - usa 'devices' passato come parametro
       client.on("message", (topic, payload, packet) => {
-        console.log("📨 MQTT message received:", topic);
+        console.log("ðŸ“¨ MQTT message received:", topic);
         
         const data = new TextDecoder("utf-8").decode(payload);
         
@@ -80,19 +80,19 @@ function Test() {
         } else {
           const parts = topic.split("/");
           
-          // ✅ Verifica struttura topic
+          // âœ… Verifica struttura topic
           if (parts.length < 4) {
-            console.warn("⚠️ Topic malformato:", topic);
+            console.warn("âš ï¸ Topic malformato:", topic);
             return;
           }
           
-          const deviceNameFromTopic = parts[3].toLowerCase(); // ✅ Lowercase
+          const deviceNameFromTopic = parts[3].toLowerCase(); // âœ… Lowercase
           const mesg = data;
           
           console.log("  Device dal topic:", deviceNameFromTopic);
           console.log("  Messaggio:", mesg);
           
-          // ✅ Trova dispositivo corrispondente
+          // âœ… Trova dispositivo corrispondente
           const matchingDevice = devices.find(dev => 
             dev.nome_attuatore.toLowerCase() === deviceNameFromTopic
           );
@@ -104,16 +104,16 @@ function Test() {
               "topic": topic 
             };
             setMQTT_data(dd);
-            console.log("✅ Match trovato:", dd.nome_attuatore, "stato:", dd.stato);
+            console.log("âœ… Match trovato:", dd.nome_attuatore, "stato:", dd.stato);
           } else {
-            console.warn("⚠️ Nessun dispositivo trovato per:", deviceNameFromTopic);
+            console.warn("âš ï¸ Nessun dispositivo trovato per:", deviceNameFromTopic);
             console.log("  Dispositivi disponibili:", devices.map(d => d.nome_attuatore.toLowerCase()));
           }
         }
       });
     };
 
-    // ✅ Carica dispositivi PRIMA, poi connetti MQTT passando i dispositivi
+    // âœ… Carica dispositivi PRIMA, poi connetti MQTT passando i dispositivi
     (async () => {
       const devices = await loadDevices();
       await connectMqtt(devices);
@@ -121,7 +121,7 @@ function Test() {
 
     // Cleanup
     return () => {
-      console.log("🔌 Chiusura connessioni MQTT...");
+      console.log("ðŸ”Œ Chiusura connessioni MQTT...");
       
       if (client) {
         try {
@@ -135,7 +135,7 @@ function Test() {
         }
       }
     };
-  }, []); // ✅ Dipendenze vuote = esegue solo al mount
+  }, []); // âœ… Dipendenze vuote = esegue solo al mount
 
   return (
     <>
