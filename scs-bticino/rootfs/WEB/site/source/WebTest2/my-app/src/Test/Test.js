@@ -47,6 +47,11 @@ function Test() {
           if (err) console.error("Errore subscribe status:", err);
           else console.log("âœ… Subscribed to /scsshield/device/+/status");
         });
+
+        client.subscribe("/scsshield/device/+/energy", (err) => {
+          if (err) console.error("Errore subscribe energy:", err);
+          else console.log("âœ… Subscribed to /scsshield/device/+/energy");
+        });
         
         client.subscribe("/scsshield/device/+/status/percentuale", (err) => {
           if (err) console.error("Errore subscribe percentuale:", err);
@@ -126,6 +131,7 @@ function Test() {
       if (client) {
         try {
           client.unsubscribe("/scsshield/device/+/status");
+          client.unsubscribe("/scsshield/device/+/energy");
           client.unsubscribe("/scsshield/device/+/status/percentuale");
           client.unsubscribe("/scsshield/device/+/modalita_termostato_impostata");
           client.unsubscribe("/scsshield/device/+/temperatura_termostato_impostata");
