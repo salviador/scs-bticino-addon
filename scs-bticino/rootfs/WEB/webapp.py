@@ -249,6 +249,12 @@ def _build_energy_total_discovery_payload(nome_attuatore: str):
     """Costruisce il payload discovery per l'energia cumulata in kWh."""
     object_id = _slugify(nome_attuatore)
     energy_object_id = f"{object_id}_energia_totale"
+    base_name = (nome_attuatore or "").strip()
+    lower_name = base_name.lower()
+    if lower_name.endswith("energia"):
+        energy_name = f"{base_name} totale"
+    else:
+        energy_name = f"{base_name} energia totale"
 
     device = {
         "identifiers": ["scs_bticino_bridge"],
@@ -258,7 +264,7 @@ def _build_energy_total_discovery_payload(nome_attuatore: str):
     }
 
     payload = {
-        "name": f"{nome_attuatore} energia totale",
+        "name": energy_name,
         "unique_id": f"scs_{energy_object_id}",
         "state_topic": f"/scsshield/device/{object_id}/energy",
         "device_class": "energy",
