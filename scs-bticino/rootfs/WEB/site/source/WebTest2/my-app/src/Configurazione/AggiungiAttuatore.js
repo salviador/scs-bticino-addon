@@ -9,6 +9,7 @@ import "./../App.css";
 
 function AggiungiAttuatore({handel_AGIUNGInew} ) {
     var timersalitadiscesa = false;
+    const maxAddressValue = 15;
 
     const [nomeATTUATORE, setinomeATTUATORE] = useState("");
     const [indirizzo_A, setindirizzo_A] = useState(0);
@@ -126,7 +127,7 @@ function AggiungiAttuatore({handel_AGIUNGInew} ) {
                         <Row >
                             <Col lg={8}><i>Citofono interno</i></Col>
                             <Col lg={8}>
-                                <input className="form-control" style={{ width: "90%" }} type="number" name="SetTemp" min="0" max="9" step="1" value={indirizzo_PL} onChange={handlChangePUNTOLUCEind} />
+                                <input className="form-control" style={{ width: "90%" }} type="number" name="SetTemp" min="0" max={maxAddressValue} step="1" value={indirizzo_PL} onChange={handlChangePUNTOLUCEind} />
                             </Col>
                         </Row>
                     </Col>
@@ -140,6 +141,27 @@ function AggiungiAttuatore({handel_AGIUNGInew} ) {
     
                 </>
             );
+        }else if(optionsStateTipoAttuatori === "sensori_consumo"){
+            return(
+                <>
+                    <Col lg={2}>
+                        <Row >
+                            <Col lg={8}><i>Indirizzo</i></Col>
+                            <Col lg={8}>
+                               <input className="form-control" style={{ width: "90%" }} type="number" name="SetTemp" min="0" max={maxAddressValue} step="1" value={indirizzo_A} onChange={handlChangeAMBIENTEind} />
+                            </Col>
+                        </Row>
+                    </Col>
+                    <Col lg={2}>
+                        <Row>
+                            <Col lg={8}><i>Toroide / CONF</i></Col>
+                            <Col lg={8}>
+                               <input className="form-control" style={{ width: "90%" }} type="number" name="SetTemp" min="0" max={maxAddressValue} step="1" value={indirizzo_PL} onChange={handlChangePUNTOLUCEind} />
+                            </Col>
+                        </Row>
+                    </Col>
+                </>
+            );
         }else if(optionsStateTipoAttuatori === "serrature"){
             return(
                 <>
@@ -147,7 +169,7 @@ function AggiungiAttuatore({handel_AGIUNGInew} ) {
                         <Row >
                             <Col lg={8}><i>Posto Esterno</i></Col>
                             <Col lg={8}>
-                                <input className="form-control" style={{ width: "90%" }} type="number" name="SetTemp" min="0" max="9" step="1" value={indirizzo_A} onChange={handlChangeAMBIENTEind} />
+                                <input className="form-control" style={{ width: "90%" }} type="number" name="SetTemp" min="0" max={maxAddressValue} step="1" value={indirizzo_A} onChange={handlChangeAMBIENTEind} />
                             </Col>
                         </Row>
                     </Col>
@@ -168,7 +190,7 @@ function AggiungiAttuatore({handel_AGIUNGInew} ) {
                         <Row >
                             <Col lg={8}><i>Ambiente</i></Col>
                             <Col lg={8}>
-                               <input className="form-control" style={{ width: "90%" }} type="number" name="SetTemp" min="0" max="9" step="1" value={indirizzo_A} onChange={handlChangeAMBIENTEind} />
+                               <input className="form-control" style={{ width: "90%" }} type="number" name="SetTemp" min="0" max={maxAddressValue} step="1" value={indirizzo_A} onChange={handlChangeAMBIENTEind} />
                             </Col>
                         </Row>
                     </Col>
@@ -176,7 +198,7 @@ function AggiungiAttuatore({handel_AGIUNGInew} ) {
                         <Row>
                             <Col lg={8}><i>Puno Luce</i></Col>
                             <Col lg={8}>
-                               <input className="form-control" style={{ width: "90%" }} type="number" name="SetTemp" min="0" max="9" step="1" value={indirizzo_PL} onChange={handlChangePUNTOLUCEind} />
+                               <input className="form-control" style={{ width: "90%" }} type="number" name="SetTemp" min="0" max={maxAddressValue} step="1" value={indirizzo_PL} onChange={handlChangePUNTOLUCEind} />
                             </Col>
                         </Row>
                     </Col>
@@ -225,6 +247,7 @@ function AggiungiAttuatore({handel_AGIUNGInew} ) {
                                                 <option value="serrande_tapparelle">Serrande/Tapparelle</option>
                                                 <option value="gruppi">Gruppi</option>
                                                 <option value="sensori_temperatura">Sensori Temperatura</option>
+                                                <option value="sensori_consumo">Sensori Consumo</option>
                                                 <option value="termostati">Termostati</option>
                                                 <option value="serrature">Serrature</option>
                                                 <option value="campanello_porta">Campanello porta</option>

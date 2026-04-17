@@ -80,6 +80,7 @@ DOMAIN_MAP = {
     "tenda": "cover",
     "serranda": "cover",
     "sensori_temperatura": "sensor",
+    "sensori_consumo": "sensor",
     "temperatura": "sensor",
     "umidita": "sensor",
     "campanello_porta": "binary_sensor",
@@ -162,6 +163,16 @@ def _build_discovery_payload(nome_attuatore: str, tipo_attuatore: str):
             "payload_off": "0",
             "device_class": "motion",
             "off_delay": 3,
+        })
+
+    elif t == "sensori_consumo":
+        payload.update({
+            "state_topic": topics["state"],
+            "device_class": "power",
+            "unit_of_measurement": "W",
+            "state_class": "measurement",
+            "value_template": "{{ value | int }}",
+            "icon": "mdi:flash",
         })
 
     elif domain == "sensor":

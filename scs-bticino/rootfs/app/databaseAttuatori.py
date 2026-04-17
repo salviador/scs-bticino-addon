@@ -134,7 +134,7 @@ class configurazione_database:
 
         ordine_x_tipo = [
             'on_off', 'dimmer', 'serrande_tapparelle', 'sensori_temperatura',
-            'termostati', 'serrature', 'campanello_porta', 'gruppi'
+            'sensori_consumo', 'termostati', 'serrature', 'campanello_porta', 'gruppi'
         ]
 
         all_attuatori = []

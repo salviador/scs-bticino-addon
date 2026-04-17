@@ -1,6 +1,7 @@
 import React from "react";
 import ON_OFF from "./Switch"
 import Sensori_Temperatura from "./Sensori_Temperatura"
+import SensoriConsumo from "./Sensori_Consumo"
 import Termostati from "./Termostati"
 import Serrande_Tapparelle from "./Serrande_Tapparelle"
 import Dimmer from "./Dimmer"
@@ -28,6 +29,12 @@ function Dispositivi({ device, mqttdata, clientMWTT }) {
         return (
             <>
                 <Sensori_Temperatura device={device} valuedataRT={mqttdata} clientMWTT={clientMWTT} />
+            </>
+        );
+    } else if (device.tipo_attuatore === "sensori_consumo") {
+        return (
+            <>
+                <SensoriConsumo device={device} valuedataRT={mqttdata} clientMWTT={clientMWTT} />
             </>
         );
     } else if (device.tipo_attuatore === "termostati") {

@@ -10,6 +10,7 @@ import "./../App.css";
 function Sensore1({ device, handle_CHANHE_NOME, handle_CHANHE_A, handle_CHANHE_PL, handle_TIPO, handle_TIMER_UP, handle_TIMER_DOWN, handle_ELIMINA}) {
     const [optionsStateTipoAttuatori, setoptionsStateTipoAttuatori] = useState("on_off");
     const [optionsStateTipoAttuatoriTIMER, setoptionsStateTipoAttuatoriTIMER] = useState(false);
+    const maxAddressValue = 15;
 
     const [nomeATTUATORE, setinomeATTUATORE] = useState("");
     const [indirizzo_A, setindirizzo_A] = useState(0);
@@ -156,7 +157,7 @@ function Sensore1({ device, handle_CHANHE_NOME, handle_CHANHE_A, handle_CHANHE_P
                         <Row >
                             <Col lg={8}><i>Citofono interno</i></Col>
                             <Col lg={8}>
-                                <input onChange={handlChangePUNTOLUCEind} className="form-control" style={{ width: "90%" }} min='0' max='9' type="number" name="PuntoLuce" step="1" value={indirizzo_PL} />
+                                <input onChange={handlChangePUNTOLUCEind} className="form-control" style={{ width: "90%" }} min='0' max={maxAddressValue} type="number" name="PuntoLuce" step="1" value={indirizzo_PL} />
                             </Col>
                         </Row>
                     </Col>
@@ -170,6 +171,28 @@ function Sensore1({ device, handle_CHANHE_NOME, handle_CHANHE_A, handle_CHANHE_P
     
                 </>
             );
+        }else if(optionsStateTipoAttuatori === "sensori_consumo"){
+            return(
+                <>
+                    <Col lg={2}>
+                        <Row >
+                            <Col lg={8}><i>Indirizzo</i></Col>
+                            <Col lg={8}>
+                                <input onChange={handlChangeAMBIENTEind} className="form-control" style={{ width: "90%" }} min='0' max={maxAddressValue} type="number" name="Ambiente" step="1" value={indirizzo_A} />
+                            </Col>
+                        </Row>
+                    </Col>
+                    <Col lg={2}>
+                        <Row>
+                            <Col lg={8}><i>Toroide / CONF</i></Col>
+                            <Col lg={8}>
+                                <input onChange={handlChangePUNTOLUCEind} className="form-control" style={{ width: "90%" }} min='0' max={maxAddressValue} type="number" name="PuntoLuce" step="1" value={indirizzo_PL} />
+                            </Col>
+                        </Row>
+                    </Col>
+
+                </>
+            );
         }else if(optionsStateTipoAttuatori === "serrature"){
             return(
                 <>
@@ -177,7 +200,7 @@ function Sensore1({ device, handle_CHANHE_NOME, handle_CHANHE_A, handle_CHANHE_P
                         <Row >
                             <Col lg={8}><i>Posto Esterno</i></Col>
                             <Col lg={8}>
-                                <input onChange={handlChangeAMBIENTEind} className="form-control" style={{ width: "90%" }} min='0' max='9' type="number" name="Ambiente" step="1" value={indirizzo_A} />
+                                <input onChange={handlChangeAMBIENTEind} className="form-control" style={{ width: "90%" }} min='0' max={maxAddressValue} type="number" name="Ambiente" step="1" value={indirizzo_A} />
                             </Col>
                         </Row>
                     </Col>
@@ -198,7 +221,7 @@ function Sensore1({ device, handle_CHANHE_NOME, handle_CHANHE_A, handle_CHANHE_P
                         <Row >
                             <Col lg={8}><i>Ambiente</i></Col>
                             <Col lg={8}>
-                                <input onChange={handlChangeAMBIENTEind} className="form-control" style={{ width: "90%" }} min='0' max='9' type="number" name="Ambiente" step="1" value={indirizzo_A} />
+                                <input onChange={handlChangeAMBIENTEind} className="form-control" style={{ width: "90%" }} min='0' max={maxAddressValue} type="number" name="Ambiente" step="1" value={indirizzo_A} />
                             </Col>
                         </Row>
                     </Col>
@@ -206,7 +229,7 @@ function Sensore1({ device, handle_CHANHE_NOME, handle_CHANHE_A, handle_CHANHE_P
                         <Row>
                             <Col lg={8}><i>Puno Luce</i></Col>
                             <Col lg={8}>
-                                <input onChange={handlChangePUNTOLUCEind} className="form-control" style={{ width: "90%" }} min='0' max='9' type="number" name="PuntoLuce" step="1" value={indirizzo_PL} />
+                                <input onChange={handlChangePUNTOLUCEind} className="form-control" style={{ width: "90%" }} min='0' max={maxAddressValue} type="number" name="PuntoLuce" step="1" value={indirizzo_PL} />
                             </Col>
                         </Row>
                     </Col>
@@ -247,6 +270,7 @@ function Sensore1({ device, handle_CHANHE_NOME, handle_CHANHE_A, handle_CHANHE_P
                                                 <option value="serrande_tapparelle">Serrande/Tapparelle</option>
                                                 <option value="gruppi">Gruppi</option>
                                                 <option value="sensori_temperatura">Sensori Temperatura</option>
+                                                <option value="sensori_consumo">Sensori Consumo</option>
                                                 <option value="termostati">Termostati</option>
                                                 <option value="serrature">Serrature</option>
                                                 <option value="campanello_porta">Campanello porta</option>

@@ -31,6 +31,7 @@ class TYPE_INTERfACCIA(Enum):
     serrande_tapparelle = "serrande_tapparelle"
     gruppi = "gruppi"
     sensori_temperatura = "sensori_temperatura"
+    sensori_consumo = "sensori_consumo"
     termostati = "termostati"
     serrature = "serrature"
     campanello_porta = "campanello_porta"
@@ -928,6 +929,30 @@ class Sensori_Temperatura(SCSDevice):
         except Exception as e:
             print("EEEEEEEEEEEEE")
             print(e)
+
+
+"""
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+
+Sensori Consumo
+
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+"""
+
+class Sensori_Consumo(SCSDevice):
+    def __init__(self, scsshield):
+        self.scsshield = scsshield
+
+        super().__init__()
+        super().Set_Type(TYPE_INTERfACCIA.sensori_consumo)
+        super().Set_Stato(0)
+        super().Reset_Change_Stato()
 
 
 """

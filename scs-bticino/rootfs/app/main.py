@@ -389,6 +389,12 @@ def popula_device():
             shield.addDevice(termostato)
             loop.create_task(sensore.Forza_la_lettura_Temperatura(lock_uartTX))
 
+        elif (item['tipo_attuatore'] == "sensori_consumo"):
+            sensore_consumo = SCS.Sensori_Consumo(shield)
+            sensore_consumo.Set_Address(int(item['indirizzo_Ambiente']), int(item['indirizzo_PL']))
+            sensore_consumo.Set_Nome_Attuatore(item['nome_attuatore'])
+            shield.addDevice(sensore_consumo)
+
         elif (item['tipo_attuatore'] == "gruppi"):
             gruppi = SCS.Gruppi(shield)
             gruppi.Set_Address(int(item['indirizzo_Ambiente']), int(item['indirizzo_PL']))
@@ -436,6 +442,8 @@ async def tsk_refresh_database(jqueqe):
                         await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/percentuale")
                     elif(tipoAtt == 'sensori_temperatura'):
                         await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/request")
+                        await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/status")
+                    elif(tipoAtt == 'sensori_consumo'):
                         await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/status")
                     elif(tipoAtt == 'termostati'):
                         await scsmqtt.post_to_MQTT_retain_reset(f"/scsshield/device/{device_slug}/status")
@@ -674,6 +682,20 @@ async def deviceReceiver_from_SCSbus(jqueqe):
                         temp = rawtemp / 10 + 25.6
                         device.Set_Stato(temp)
                         await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/status", format(temp, '.1f'))
+
+                    # Sensori Consumo F520 - trama estesa 11 byte
+                    elif (
+                        len(trama) == 11
+                        and trama[1] == b'\xD2'
+                        and trama[3] == b'\x02'
+                        and trama[4] == b'\x34'
+                        and trama[5] == b'\x00'
+                        and trama[6] == b'\x1D'
+                        and type.name == SCS.TYPE_INTERfACCIA.sensori_consumo.name
+                    ):
+                        potenza = (int.from_bytes(trama[7], "big") << 8) + int.from_bytes(trama[8], "big")
+                        device.Set_Stato(potenza)
+                        await scsmqtt.post_to_MQTT(f"/scsshield/device/{device_slug}/status", str(potenza))
 
                     # Campanello
                     elif len(trama) == 7 and trama[1] == b'\x91' and trama[3] == b'\x60' and trama[4] == b'\x08' and type.name == SCS.TYPE_INTERfACCIA.campanello_porta.name:
