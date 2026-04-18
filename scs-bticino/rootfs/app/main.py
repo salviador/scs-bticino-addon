@@ -727,6 +727,39 @@ async def tsk_publish_energy_totals():
             logger.error(e)
 
 
+# Intervallo (in secondi) del keep-alive della trasmissione continua dei toroidi F520.
+# Il dispositivo si autodisattiva dopo un timeout se nessuno gli invia la trama di
+# abilitazione (0xA8 0xD1 <ADDR> 0x02 0x32 0x00 0x02 0x1D 0xFF <CHK> 0xA3),
+# quindi la rinviamo periodicamente. 60 s è un valore di sicurezza.
+SENSORI_CONSUMO_KEEPALIVE_SEC = 60
+
+
+async def tsk_keepalive_sensori_consumo():
+    """
+    Mantiene attiva la trasmissione continua della potenza per tutti i sensori
+    di consumo F520 configurati. Se non ci sono sensori di consumo tra i device
+    registrati, il task non invia alcuna trama sul bus.
+    """
+    # Piccolo ritardo iniziale per lasciare che popula_device() completi
+    await asyncio.sleep(2)
+    while True:
+        try:
+            devices = shield.getDevices()
+            for device in devices:
+                try:
+                    if device.Get_Type().name == SCS.TYPE_INTERfACCIA.sensori_consumo.name:
+                        await device.Attiva_Trasmissione_Continua(lock_uartTX)
+                        # Piccolo gap tra toroidi diversi per non intasare il bus
+                        await asyncio.sleep(0.2)
+                except Exception as inner:
+                    logger.error(f"keepalive sensore_consumo fallito: {inner}")
+            await asyncio.sleep(SENSORI_CONSUMO_KEEPALIVE_SEC)
+        except Exception as e:
+            logger.error("Error in tsk_keepalive_sensori_consumo")
+            logger.error(e)
+            await asyncio.sleep(SENSORI_CONSUMO_KEEPALIVE_SEC)
+
+
 async def deviceReceiver_from_SCSbus(jqueqe):
     """Riceve gli stati dei device dal BUS SCS e li invia a MQTT"""
     while True:
@@ -950,6 +983,7 @@ async def main():
 
     tasks.append(loop.create_task( mqtt_action(queue_mqtt_action.async_q)           ))
     tasks.append(loop.create_task( tsk_publish_energy_totals()                      ))
+    tasks.append(loop.create_task( tsk_keepalive_sensori_consumo()                  ))
 
     #tasks.append(loop.create_task( Node_Red_flow(queue_node_red_action.async_q)           ))
 

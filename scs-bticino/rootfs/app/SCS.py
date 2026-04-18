@@ -955,6 +955,43 @@ class Sensori_Consumo(SCSDevice):
         super().Reset_Change_Stato()
 
 
+    async def Attiva_Trasmissione_Continua(self, look):
+        """
+        Invia al toroide F520 la trama di abilitazione della trasmissione
+        continua della potenza misurata. Va richiamata periodicamente
+        (keep-alive) perché il toroide si autodisattiva dopo un timeout.
+
+        Trama comando (11 byte):
+            A8 D1 <ADDR> 02 32 00 02 1D FF <CHK_XOR> A3
+
+        Il toroide risponde con ACK:
+            A8 D2 <ADDR> 02 34 00 02 1D FF <CHK_XOR> A3
+        e poi inizia a inviare le letture di potenza:
+            A8 D2 <ADDR> 02 34 00 1D 00 <POW> <CHK_XOR> A3
+        """
+        try:
+            async with look:
+                # Indirizzo del toroide (Ambiente -> nibble alto, PL -> nibble basso)
+                address = b'\x00'
+                address = SCSshield.bitwise_and_bytes(bytes([super().Get_Address_A()]), b'\x0F')
+                address = SCSshield.bitwise_shiftleft_bytes(address, b'\x04')
+                address = SCSshield.bitwise_and_bytes(address, b'\xF0')
+                address = SCSshield.bitwise_or_bytes(address, bytes([super().Get_Address_PL()]))
+
+                bufval = [
+                    b'\xA8', b'\xD1', address,
+                    b'\x02', b'\x32', b'\x00', b'\x02', b'\x1D', b'\xFF',
+                    b'\x00',   # checksum: calcolato automaticamente dentro interfaccia_send_COMANDO_11_RAW
+                    b'\xA3'
+                ]
+
+                await self.scsshield.interfaccia_send_COMANDO_11_RAW(bufval)
+                await asyncio.sleep(0.1)
+        except Exception as e:
+            print("EEEEEEEEEEEEE [Sensori_Consumo.Attiva_Trasmissione_Continua]")
+            print(e)
+
+
 """
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
