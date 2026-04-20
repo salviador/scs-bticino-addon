@@ -731,7 +731,7 @@ async def tsk_publish_energy_totals():
 # Il dispositivo si autodisattiva dopo un timeout se nessuno gli invia la trama di
 # abilitazione (0xA8 0xD1 <ADDR> 0x02 0x32 0x00 0x02 0x1D 0xFF <CHK> 0xA3),
 # quindi la rinviamo periodicamente. 60 s è un valore di sicurezza.
-SENSORI_CONSUMO_KEEPALIVE_SEC = 60
+SENSORI_CONSUMO_KEEPALIVE_SEC = 60*5
 
 
 async def tsk_keepalive_sensori_consumo():
