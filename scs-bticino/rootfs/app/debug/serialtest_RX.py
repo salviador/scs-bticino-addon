@@ -1,5 +1,4 @@
 import asyncio
-from asyncio.events import get_child_watcher
 import time
 import janus
 from gpiozero import LED
@@ -20,7 +19,8 @@ enable_opto.on()
 
 
 
-loop = asyncio.get_event_loop()
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
 
 lock_uartTX = asyncio.Lock()
 

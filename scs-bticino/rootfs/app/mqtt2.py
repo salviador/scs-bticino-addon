@@ -2,9 +2,7 @@ import asyncio
 import os
 import logging
 from gmqtt import Client as MQTTClient
-import uvloop
 
-asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 logger = logging.getLogger(__name__)
 
 class SCSMQTT2(object):

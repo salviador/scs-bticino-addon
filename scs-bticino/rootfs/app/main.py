@@ -1,5 +1,4 @@
 import asyncio
-from asyncio.events import get_child_watcher
 import time
 import os
 import janus
@@ -12,15 +11,19 @@ import databaseAttuatori
 import nodered
 import logging
 import sys
-import importlib.machinery
 import os, time, atexit
 import tornado
 import tornado.web
 import tornado.ioloop
 import tornado.httpserver
+import uvloop
 
-import sys
-sys.path.insert(0, '/app/WEB')
+# Docker copia le due directory affiancate in /app/app e /app/WEB.
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+WEB_DIR = os.path.abspath(os.path.join(APP_DIR, os.pardir, 'WEB'))
+if WEB_DIR not in sys.path:
+    sys.path.insert(0, WEB_DIR)
+
 import webapp
 
 
@@ -236,19 +239,6 @@ logger.info(f"/sys/class/gpio exists: {os.path.exists('/sys/class/gpio')}")
 logger.info("==================")
 
 # =============================================================================
-# WEBAPP LOADING
-# =============================================================================
-dir_path = os.path.dirname(os.path.realpath(__file__))
-dir_path_weblist = dir_path.split('/')
-s = ''
-for i, _ in enumerate(dir_path_weblist):
-    if((len(dir_path_weblist)-1) != i):
-        s = s + _ + '/'
-dir_path_web = s + 'WEB/'
-
-webapp = importlib.machinery.SourceFileLoader('webapp', dir_path_web + 'webapp.py').load_module()
-
-# =============================================================================
 # DATABASE E EVENT LOOP
 # =============================================================================
 if gpio_available:
@@ -257,7 +247,7 @@ else:
     logger.warning("⚠ Running without GPIO control - some features may be limited")
 
 dbm = databaseAttuatori.configurazione_database()
-loop = asyncio.new_event_loop()
+loop = uvloop.new_event_loop()
 asyncio.set_event_loop(loop)
 lock_uartTX = asyncio.Lock()
 lock_refresh_Database = asyncio.Lock()

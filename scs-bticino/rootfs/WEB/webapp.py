@@ -14,7 +14,6 @@ import paho.mqtt.publish as publish
 import logging
 import time
 import sys
-import importlib.machinery
 
 logger = logging.getLogger(__name__)
 
@@ -25,17 +24,14 @@ DEBUG_MODE = str(os.getenv('DEBUG_MODE', 'false')).lower() in ('1','true','yes',
 # ============================================================================
 # PATH E CONFIGURAZIONE
 # ============================================================================
-dir_path = os.path.dirname(os.path.realpath(__file__))
-dir_path_weblist = dir_path.split('/')
-s = ''
-for i, _ in enumerate(dir_path_weblist):
-    if((len(dir_path_weblist)-1) != i):
-        s = s + _ + '/'
-dir_path_app = s + 'app/'
+dir_path = os.path.dirname(os.path.abspath(__file__))
+dir_path_app = os.path.abspath(os.path.join(dir_path, os.pardir, 'app'))
+if dir_path_app not in sys.path:
+    sys.path.insert(0, dir_path_app)
 
-databaseAttuatori = importlib.machinery.SourceFileLoader('databaseAttuatori', dir_path_app + 'databaseAttuatori.py').load_module()
-nodered = importlib.machinery.SourceFileLoader('nodered', dir_path_app + 'nodered.py').load_module()
-noderedAWS = importlib.machinery.SourceFileLoader('noderedAWS', dir_path_app + 'noderedAWS.py').load_module()
+import databaseAttuatori
+import nodered
+import noderedAWS
 
 mqtt_host = os.getenv('MQTT_HOST', 'localhost')
 mqtt_port = int(os.getenv('MQTT_PORT', 1883))
